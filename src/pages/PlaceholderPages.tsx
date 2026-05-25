@@ -1,0 +1,1 @@
+export const AdminSystemPage = () => <div className="p-6"><h1>Администрирование ПО (В разработке)</h1></div>;
