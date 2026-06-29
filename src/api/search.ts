@@ -82,6 +82,7 @@
 
 import { api, mapPaginated, mapSearchResultItem } from '../api';
 import type { SearchParams, SearchResultItem, PaginatedResponse, SearchFilters } from '../types/search.types';
+import type { InfoObjectDTO } from '../types/dto.types';
 
 export interface SearchHistoryItem {
   id: string;
@@ -121,7 +122,25 @@ export const searchApi = {
     if (params.everywhere) queryParams.search_everywhere = params.everywhere;
 
     const response = await api.get('/info-objects/search', { params: queryParams });
-    return mapPaginated(response.data, mapSearchResultItem);
+    
+    return mapPaginated(response.data, (item: unknown) => {
+      const dtoItem = item as InfoObjectDTO;
+      const mappedResult = mapSearchResultItem(dtoItem) as unknown as Record<string, unknown>;
+      
+      if (Array.isArray(dtoItem.tags)) {
+        mappedResult.tags = dtoItem.tags.map((t: unknown) => {
+          if (typeof t === 'object' && t !== null) {
+            const obj = t as Record<string, unknown>;
+            return String(obj.name || obj.value || obj.title || JSON.stringify(t));
+          }
+          return String(t);
+        });
+      } else {
+        mappedResult.tags = [];
+      }
+      
+      return mappedResult as unknown as SearchResultItem;
+    });
   },
 
   getSearchHistory: async (): Promise<SearchHistoryItem[]> => {

@@ -1,95 +1,10 @@
-// import { useEffect, useState } from 'react';
-// import { useParams, Link } from 'react-router-dom';
-// import { useTranslation } from 'react-i18next';
-// import { ioApi } from '../api/io';
-// import type { IOData } from '../types/io.types';
-
-// export const ViewIOPage = () => {
-//   const { id } = useParams<{ id: string }>();
-//   const { t } = useTranslation();
-//   const [data, setData] = useState<IOData | null>(null);
-//   const [isLoading, setIsLoading] = useState(true);
-
-//   useEffect(() => {
-//     if (id) {
-//       ioApi.getIO(id).then(res => {
-//         setData(res.data);
-//         setIsLoading(false);
-//       });
-//     }
-//   }, [id]);
-
-//   if (isLoading) return <div className="p-6 text-center text-gray-600">{t('view_io.loading')}</div>;
-//   if (!data) return <div className="p-6 text-center text-red-500">{t('view_io.not_found')}</div>;
-
-//   return (
-//     <div className="max-w-4xl mx-auto p-4 md:p-8 bg-white rounded-xl shadow-sm border border-gray-200">
-//       <div className="flex flex-col md:flex-row justify-between items-start mb-6 border-b border-gray-100 pb-4 gap-4">
-//         <div>
-//           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">{data.title}</h1>
-//           <div className="text-sm text-gray-500 flex flex-wrap gap-4">
-//             <span>{t('view_io.author')} <span className="font-medium text-gray-700">{data.author || t('view_io.not_specified')}</span></span>
-//             <span>{t('view_io.source')} <span className="font-medium text-gray-700">{data.source || t('view_io.not_specified')}</span></span>
-//           </div>
-//         </div>
-//         <Link to={`/io/edit/${id}`} className="shrink-0 px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors">
-//           {t('view_io.edit')}
-//         </Link>
-//       </div>
-
-//       <div className="prose max-w-none mb-8 text-gray-800 whitespace-pre-wrap leading-relaxed">
-//         {data.text}
-//       </div>
-
-//       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 p-4 md:p-6 rounded-xl mb-6 border border-gray-100">
-//         <div>
-//           <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">{t('view_io.tags')}</h3>
-//           <div className="flex flex-wrap gap-2">
-//             {data.tags.length > 0 ? data.tags.map(tag => (
-//               <span key={tag} className="px-3 py-1 bg-blue-50 border border-blue-100 text-blue-700 rounded-lg text-sm">{tag}</span>
-//             )) : <span className="text-sm text-gray-500">{t('view_io.no_tags')}</span>}
-//           </div>
-//         </div>
-        
-//         <div>
-//           <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">{t('view_io.metadata')}</h3>
-//           <ul className="text-sm space-y-2 text-gray-700">
-//             <li><span className="font-medium text-gray-900">{t('view_io.meta_doi')}</span> {data.doi || '-'}</li>
-//             <li><span className="font-medium text-gray-900">{t('view_io.meta_pub')}</span> {data.publicationName || '-'}</li>
-//             <li><span className="font-medium text-gray-900">{t('view_io.meta_url')}</span> {data.url ? <a href={data.url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">{data.url}</a> : '-'}</li>
-//             <li><span className="font-medium text-gray-900">{t('view_io.meta_period')}</span> {data.dateFrom ? new Date(data.dateFrom).toLocaleDateString() : '-'} — {data.dateTo ? new Date(data.dateTo).toLocaleDateString() : '-'}</li>
-//           </ul>
-//         </div>
-//       </div>
-
-//       <div>
-//         <h3 className="text-lg font-bold text-gray-800 mb-3">{t('view_io.files_title')}</h3>
-//         {data.attachments && data.attachments.length > 0 ? (
-//           <div className="space-y-2">
-//             {data.attachments.map((fileId, idx) => (
-//               <div key={idx} className="flex justify-between items-center p-3 border border-gray-200 rounded-lg bg-gray-50">
-//                 <span className="text-sm text-gray-800 font-medium truncate pr-4">File_{fileId}.pdf</span>
-//                 <div className="space-x-3 text-sm shrink-0">
-//                   <button className="text-blue-600 hover:text-blue-800 font-medium">{t('view_io.download')}</button>
-//                   <button className="text-gray-600 hover:text-gray-800 font-medium">{t('view_io.view')}</button>
-//                 </div>
-//               </div>
-//             ))}
-//           </div>
-//         ) : (
-//           <p className="text-sm text-gray-500">{t('view_io.no_files')}</p>
-//         )}
-//       </div>
-//     </div>
-//   );
-// };
-
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ioApi } from '../api/io';
 import { api } from '../api';
 import { useAuthStore } from '../store/useAuthStore';
+import { parseMarkdownToHtml } from '../utils/markdownParser';
 import type { InfoObjectDTO, MediaFileDTO } from '../types/dto.types';
 
 export const ViewIOPage = () => {
@@ -251,9 +166,10 @@ export const ViewIOPage = () => {
         </div>
       </div>
 
-      <div className="prose max-w-none mb-8 text-gray-800 whitespace-pre-wrap leading-relaxed text-base">
-        {data.content}
-      </div>
+      <div 
+        className="text-gray-800 break-words prose prose-sm max-w-none space-y-1 mb-8"
+        dangerouslySetInnerHTML={{ __html: parseMarkdownToHtml(data.content || '') }}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 p-5 rounded-xl mb-6 border border-gray-100">
         <div>
