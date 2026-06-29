@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { UserProfile as User, UserProfile } from './types/auth.types';
+import type { UserProfile as UserProfile } from './types/auth.types';
 import type { SearchResultItem, PaginatedResponse } from './types/search.types';
 import type { UserDTO, InfoObjectDTO, PaginatedResponseDTO } from './types/dto.types';
 
@@ -28,14 +28,15 @@ export const mapRole = (profile: UserProfile): string => {
     return "П";
 }
 
-export const mapUser = (dto: UserDTO, rulesAccepted: boolean = false): User => ({
-    id: dto.id,
-    email: dto.email || '',
-    name: dto.full_name || dto.login,
-    is_user_admin: dto.is_user_admin,
-    is_data_admin: dto.is_data_admin,
-    is_super_admin: dto.is_super_admin,
-    rules_accepted: rulesAccepted,
+export const mapUser = (dto: UserDTO, rulesAccepted: boolean = false): UserProfile => ({
+  id: dto.id,
+  email: dto.email,
+  name: dto.full_name,
+  login: dto.login || dto.email || '',
+  is_user_admin: dto.is_user_admin,
+  is_data_admin: dto.is_data_admin,
+  is_super_admin: dto.is_super_admin,
+  rules_accepted: rulesAccepted,
 });
 
 export const mapSearchResultItem = (dto: InfoObjectDTO): SearchResultItem => ({

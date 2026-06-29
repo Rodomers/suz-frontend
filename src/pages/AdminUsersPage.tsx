@@ -107,8 +107,8 @@ export const AdminUsersPage = () => {
     } catch {
       setInfoModal({
         isOpen: true,
-        title: t('common.error', 'Ошибка'),
-        message: 'Пожалуйста, введите корректный URL-адрес (например, https://example.com)'
+        title: t('common.error'),
+        message: t('admin_users.invalid_url_error')
       });
       return;
     }
@@ -117,14 +117,14 @@ export const AdminUsersPage = () => {
       await api.put('/users/rules-link', { rules_url: globalRulesUrl });
       setInfoModal({
         isOpen: true,
-        title: t('common.success', 'Успешно'),
-        message: 'Ссылка на правила успешно обновлена'
+        title: t('common.success'),
+        message: t('admin_users.rules_url_success')
       });
     } catch {
       setInfoModal({
         isOpen: true,
-        title: t('common.error', 'Ошибка'),
-        message: 'Ошибка при увеличении или обновлении ссылки'
+        title: t('common.error'),
+        message: t('admin_users.rules_url_error')
       });
     }
   };
@@ -347,11 +347,11 @@ export const AdminUsersPage = () => {
 
       <ConfirmModal
         isOpen={batchConfirmOpen}
-        title="Пакетное изменение доступа"
-        message={`Вы уверены, что хотите обновить даты доступа для выбранных пользователей (${selectedUserIds.length} шт.)?`}
+        title={t('admin_users.batch_update_title')}
+        message={t('admin_users.batch_update_confirm', { count: selectedUserIds.length })}
         onConfirm={handleBatchUpdate}
         onCancel={() => setBatchConfirmOpen(false)}
-        confirmText="Применить"
+        confirmText={t('common.apply')}
       />
 
       {isModalOpen && (
@@ -376,7 +376,7 @@ export const AdminUsersPage = () => {
                   <div className="flex gap-1">
                     <input required type="text" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="flex-1 p-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
                     <button type="button" onClick={generatePassword} className="px-2 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-md text-xs transition-colors border border-gray-300">
-                      Ген.
+                      {t('admin_users.generate_short')}
                     </button>
                   </div>
                 </div>
@@ -395,39 +395,39 @@ export const AdminUsersPage = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Организация</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin_users.col_organization')}</label>
                   <input type="text" value={formData.organization} onChange={e => setFormData({...formData, organization: e.target.value})} className="w-full p-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Должность</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin_users.col_position')}</label>
                   <input type="text" value={formData.position} onChange={e => setFormData({...formData, position: e.target.value})} className="w-full p-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Телефон</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin_users.col_phone')}</label>
                   <input type="text" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full p-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Комментарий</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin_users.col_comment')}</label>
                   <input type="text" value={formData.comment} onChange={e => setFormData({...formData, comment: e.target.value})} className="w-full p-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Дата начала</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin_users.col_access_start')}</label>
                   <input type="date" value={formData.access_start} onChange={e => setFormData({...formData, access_start: e.target.value})} className="w-full p-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Дата окончания</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin_users.col_access_end')}</label>
                   <div className="space-y-1">
                     <input type="date" value={formData.access_end} onChange={e => setFormData({...formData, access_end: e.target.value})} className="w-full p-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
                     <div className="flex items-center gap-1.5 mt-1">
                       <input type="number" min="1" value={createDaysInput} onChange={e => setCreateDaysInput(e.target.value)} className="w-20 p-1 text-xs border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500" />
                       <button type="button" onClick={() => applyDaysPreset(false)} className="flex-1 py-1 px-2 text-[10px] bg-blue-50 hover:bg-blue-100 text-blue-700 rounded transition-colors border border-blue-200 font-medium">
-                        Применить дни
+                        {t('admin_users.apply_days')}
                       </button>
                     </div>
                   </div>
@@ -473,7 +473,7 @@ export const AdminUsersPage = () => {
       {isEditModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="bg-white p-6 rounded-xl shadow-lg w-full max-w-lg border border-gray-100 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4 text-gray-800">{t('common.edit') || 'Редактировать пользователя'}</h2>
+            <h2 className="text-xl font-bold mb-4 text-gray-800">{t('admin_users.edit_title')}</h2>
             
             {submitError && (
               <div className="mb-4 p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100">
@@ -499,40 +499,40 @@ export const AdminUsersPage = () => {
                   <input type="email" value={editFormData.email} onChange={e => setEditFormData({...editFormData, email: e.target.value})} className="w-full p-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Телефон</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin_users.col_phone')}</label>
                   <input type="text" value={editFormData.phone} onChange={e => setEditFormData({...editFormData, phone: e.target.value})} className="w-full p-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Организация</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin_users.col_organization')}</label>
                   <input type="text" value={editFormData.organization} onChange={e => setEditFormData({...editFormData, organization: e.target.value})} className="w-full p-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Должность</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin_users.col_position')}</label>
                   <input type="text" value={editFormData.position} onChange={e => setEditFormData({...editFormData, position: e.target.value})} className="w-full p-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Комментарий</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin_users.col_comment')}</label>
                 <input type="text" value={editFormData.comment} onChange={e => setEditFormData({...editFormData, comment: e.target.value})} className="w-full p-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Дата начала</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin_users.col_access_start')}</label>
                   <input type="date" value={editFormData.access_start} onChange={e => setEditFormData({...editFormData, access_start: e.target.value})} className="w-full p-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Дата окончания</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin_users.col_access_end')}</label>
                   <div className="space-y-1">
                     <input type="date" value={editFormData.access_end} onChange={e => setEditFormData({...editFormData, access_end: e.target.value})} className="w-full p-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
                     <div className="flex items-center gap-1.5 mt-1">
                       <input type="number" min="1" value={editDaysInput} onChange={e => setEditDaysInput(e.target.value)} className="w-20 p-1 text-xs border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500" />
                       <button type="button" onClick={() => applyDaysPreset(true)} className="flex-1 py-1 px-2 text-[10px] bg-blue-50 hover:bg-blue-100 text-blue-700 rounded transition-colors border border-blue-200 font-medium">
-                        Применить дни
+                        {t('admin_users.apply_days')}
                       </button>
                     </div>
                   </div>
@@ -567,7 +567,7 @@ export const AdminUsersPage = () => {
                   {t('common.cancel')}
                 </button>
                 <button type="submit" disabled={isSubmitting} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg font-medium transition-colors text-sm">
-                  {isSubmitting ? t('common.loading') : t('common.save') || 'Сохранить'}
+                  {isSubmitting ? t('common.loading') : t('common.save')}
                 </button>
               </div>
             </form>
@@ -586,7 +586,7 @@ export const AdminUsersPage = () => {
         <div className="mb-6 p-4 bg-white border border-gray-200 rounded-xl shadow-sm flex items-center justify-between gap-4">
           <div className="flex-1">
             <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1">
-              Глобальная ссылка на правила (для страницы авторизации)
+              {t('admin_users.global_rules_label')}
             </label>
             <input
               type="text"
@@ -601,7 +601,7 @@ export const AdminUsersPage = () => {
             onClick={handleSaveRulesUrl}
             className="mt-5 px-4 py-2 bg-gray-800 hover:bg-gray-900 text-white text-sm font-medium rounded-lg transition-colors"
           >
-            Сохранить ссылку
+            {t('admin_users.save_rules_btn')}
           </button>
         </div>
       )}
@@ -610,23 +610,23 @@ export const AdminUsersPage = () => {
         <div className="mb-4 p-4 bg-blue-50 border border-blue-100 rounded-xl flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-blue-800">
-              Выбрано пользователей: {selectedUserIds.length}
+              {t('admin_users.selected_count', { count: selectedUserIds.length })}
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2">
-              <label className="text-xs font-medium text-gray-600">Дата начала:</label>
+              <label className="text-xs font-medium text-gray-600">{t('admin_users.batch_start_label')}</label>
               <input type="date" value={batchStartDate} onChange={e => setBatchStartDate(e.target.value)} className="p-1.5 text-sm border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
             </div>
             <div className="flex items-center gap-2">
-              <label className="text-xs font-medium text-gray-600">Дата окончания:</label>
+              <label className="text-xs font-medium text-gray-600">{t('admin_users.batch_end_label')}</label>
               <input type="date" value={batchEndDate} onChange={e => setBatchEndDate(e.target.value)} className="p-1.5 text-sm border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
             </div>
             <button type="button" onClick={() => setBatchConfirmOpen(true)} className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm">
-              Применить изменения
+              {t('admin_users.apply_changes_btn')}
             </button>
             <button type="button" onClick={() => setSelectedUserIds([])} className="px-3 py-1.5 text-gray-500 hover:text-gray-700 text-sm font-medium transition-colors">
-              Сбросить
+              {t('admin_users.reset_btn')}
             </button>
           </div>
         </div>
@@ -639,11 +639,11 @@ export const AdminUsersPage = () => {
               <th className="p-4 w-[48px] min-w-[48px] sticky left-0 top-0 bg-gray-50 z-30">
                 <input type="checkbox" checked={users.length > 0 && selectedUserIds.length === users.length} onChange={e => handleSelectAll(e.target.checked)} className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
               </th>
-              <th className="p-4 w-[64px] min-w-[64px] sticky left-[48px] top-0 bg-gray-50 z-30">ID</th>
+              <th className="p-4 w-[64px] min-w-[64px] sticky left-[48px] top-0 bg-gray-50 z-30">{t('admin_users.col_id')}</th>
               <th className="p-4 w-[150px] min-w-[150px] sticky left-[112px] top-0 bg-gray-50 z-30">{t('admin_users.col_login')}</th>
               <th className="p-4 sticky top-0 bg-gray-50 z-10">{t('admin_users.col_name')}</th>
-              <th className="p-4 sticky top-0 bg-gray-50 z-10">Профиль / Контакты</th>
-              <th className="p-4 sticky top-0 bg-gray-50 z-10">Период доступа</th>
+              <th className="p-4 sticky top-0 bg-gray-50 z-10">{t('admin_users.col_profile_contacts')}</th>
+              <th className="p-4 sticky top-0 bg-gray-50 z-10">{t('admin_users.col_access_period')}</th>
               <th className="p-4 sticky top-0 bg-gray-50 z-10">{t('admin_users.col_role')}</th>
               <th className="p-4 text-center sticky top-0 bg-gray-50 z-10">{t('common.actions')}</th>
             </tr>
@@ -666,14 +666,14 @@ export const AdminUsersPage = () => {
                       if (!u.rules_accepted || !u.rules_accepted_at || u.rules_accepted_at.startsWith('1970')) {
                         return (
                           <span className="text-[10px] text-red-600 bg-red-50 px-1.5 py-0.5 rounded border border-red-200 mt-1 inline-block font-normal">
-                            Не приняты
+                            {t('admin_users.rules_not_accepted')}
                           </span>
                         );
                       }
                       const dateValid = new Date(u.rules_accepted_at);
                       return (
                         <span className="text-[10px] text-green-600 bg-green-50 px-1.5 py-0.5 rounded border border-green-200 mt-1 inline-block font-normal">
-                          Приняты: {dateValid.toLocaleDateString()} {dateValid.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                          {t('admin_users.rules_accepted_at_date', { date: dateValid.toLocaleDateString(), time: dateValid.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) })}
                         </span>
                       );
                     })()}
@@ -714,7 +714,7 @@ export const AdminUsersPage = () => {
                   <td className="p-4 text-center">
                     <div className="flex items-center justify-center gap-3">
                       <button onClick={() => handleOpenEditModal(u)} className="text-blue-600 hover:text-blue-800 font-medium transition-colors">
-                        {t('common.edit') || 'Редактировать'}
+                        {t('common.edit')}
                       </button>
                       {u.id !== currentUser?.id && (currentUser?.is_super_admin || !u.is_super_admin) && (
                         <button onClick={() => requestDeleteUser(u.id)} className="text-red-600 hover:text-red-800 font-medium transition-colors">
@@ -736,7 +736,7 @@ export const AdminUsersPage = () => {
         message={infoModal.message}
         onConfirm={() => setInfoModal({ isOpen: false, title: '', message: '' })}
         onCancel={() => setInfoModal({ isOpen: false, title: '', message: '' })}
-        confirmText="ОК"
+        confirmText={t('common.ok')}
         isDanger={false}
       />
     </div>

@@ -1,6 +1,6 @@
 {
   "common": {
-    "app_name": "KMS OPD-26",
+    "app_name": "KMS-26",
     "loading": "Loading...",
     "error": "An error occurred",
     "save": "Save",
@@ -9,7 +9,12 @@
     "confirm": "Confirm",
     "delete": "Delete",
     "create": "Create",
-    "actions": "Actions"
+    "actions": "Actions",
+    "success": "Success",
+    "apply": "Apply",
+    "ok": "OK",
+    "send": "Send",
+    "sending": "Sending..."
   },
   "auth": {
     "login": "Login",
@@ -102,7 +107,9 @@
       "dateTo": "Date To",
       "tags": "Tags",
       "tags_placeholder": "Enter tags separated by a new line",
-      "attachments": "Attachments"
+      "attachments": "Attachments",
+      "date_placeholder": "YYYY, MM.YYYY or DD.MM.YYYY",
+      "compress_images": "Compress images before sending"
     },
     "dnd": {
       "text": "Drag and drop files here or click the button",
@@ -111,7 +118,53 @@
     "submit_edit": "Update",
     "submit_create": "Create",
     "success_edit": "Object successfully updated",
-    "success_create": "Object successfully created"
+    "success_create": "Object successfully created",
+    "not_specified": "Not specified",
+    "errors": {
+      "load_failed": "Error loading files or object data!",
+      "blocked_file": "Files with extensions .exe, .bat, .sh, .php, .js are prohibited for upload!",
+      "delete_file_failed": "Failed to delete file from server",
+      "invalid_date_from": "Invalid start date format. Allowed formats: YYYY, MM.YYYY or DD.MM.YYYY",
+      "invalid_date_to": "Invalid end date format. Allowed formats: YYYY, MM.YYYY or DD.MM.YYYY",
+      "save_failed": "Failed to save information object. Please try again."
+    },
+    "info": {
+      "form_cleared": "Form cleared",
+      "copy_created": "Draft copy is ready to save"
+    },
+    "editor": {
+      "tab_edit": "Editor",
+      "tab_preview": "Preview",
+      "bold": "bold",
+      "italic": "italic",
+      "strike": "strikethrough",
+      "heading": "Heading",
+      "bullet_list": "bullet",
+      "numbered_list": "item",
+      "code": "code",
+      "bold_tooltip": "Bold",
+      "italic_tooltip": "Italic",
+      "strike_tooltip": "Strikethrough",
+      "headings_tooltip": "Headings",
+      "bullet_tooltip": "Bullet list",
+      "numbered_tooltip": "Numbered list",
+      "code_tooltip": "Code block",
+      "bullet_text": "list item",
+      "numbered_text": "list item",
+      "heading1": "Heading 1",
+      "heading2": "Heading 2",
+      "heading3": "Heading 3",
+      "no_preview": "No text for preview",
+      "bullet_label": "• List",
+      "numbered_label": "1. List"
+    },
+    "buttons": {
+      "clear": "Clear form",
+      "copy": "Create copy",
+      "create_new": "Create new form"
+    },
+    "confirm_clear_title": "Confirmation",
+    "confirm_clear_text": "Are you sure you want to clear the form? All unsaved changes will be lost."
   },
   "search_form": {
     "title": "Search Objects",
@@ -152,7 +205,7 @@
       "next": "Next"
     }
   },
-"admin_data": {
+  "admin_data": {
     "title": "Manage IO (Information Objects)",
     "delete_selected": "Delete selected ({{count}})",
     "table_title": "Title",
@@ -169,7 +222,17 @@
     "error_create_tag": "Error creating tag",
     "error_update_tag": "Error updating tag",
     "error_delete_tag": "Error deleting tag",
-    "error_delete_io": "Error deleting selected objects"
+    "error_delete_io": "Error deleting selected objects",
+    "deletion_requests_title": "IO Deletion Requests",
+    "table_io_id": "Object ID",
+    "table_author_login": "Requester Login",
+    "table_reason": "Deletion Reason",
+    "table_actions": "Actions",
+    "approve_delete": "Approve deletion",
+    "reject_delete": "Reject",
+    "no_deletion_requests": "No active deletion requests",
+    "error_approve_delete": "Error approving object deletion",
+    "error_reject_delete": "Error rejecting request"
   },
   "admin_users": {
     "title": "Users",
@@ -186,26 +249,61 @@
     "roles": "Access Rights",
     "role_user_admin": "User Admin (AP)",
     "role_data_admin": "Data Admin (AD)",
-    "role_super_admin": "Super Admin (SA)"
+    "role_super_admin": "Super Admin (SA)",
+    "batch_update_title": "Batch access modification",
+    "batch_update_confirm": "Are you sure you want to update access dates for the selected users ({{count}} pcs.)?",
+    "generate_short": "Gen.",
+    "col_organization": "Organization",
+    "col_position": "Position",
+    "col_phone": "Phone",
+    "col_comment": "Comment",
+    "col_access_start": "Start Date",
+    "col_access_end": "End Date",
+    "apply_days": "Apply days",
+    "edit_title": "Edit User",
+    "global_rules_label": "Global rules URL (for authorization page)",
+    "save_rules_btn": "Save link",
+    "selected_count": "Users selected: {{count}}",
+    "batch_start_label": "Start date:",
+    "batch_end_label": "End date:",
+    "apply_changes_btn": "Apply changes",
+    "reset_btn": "Reset",
+    "col_id": "ID",
+    "col_profile_contacts": "Profile / Contacts",
+    "col_access_period": "Access period",
+    "rules_not_accepted": "Not accepted",
+    "rules_accepted_at_date": "Accepted: {{date}} {{time}}",
+    "invalid_url_error": "Please enter a valid URL (e.g., https://example.com)",
+    "rules_url_success": "Rules URL updated successfully",
+    "rules_url_error": "Error updating or setting the link"
   },
   "view_io": {
-    "loading": "Loading card data...",
-    "not_found": "Object not found.",
-    "author": "Author: ",
-    "source": "Source: ",
+    "loading": "Loading...",
+    "not_found": "Information object not found",
+    "author": "Author:",
+    "source": "Source:",
     "not_specified": "Not specified",
     "edit": "Edit",
     "tags": "Tags",
     "no_tags": "No tags",
     "metadata": "Metadata",
-    "meta_doi": "DOI: ",
-    "meta_pub": "Publication: ",
-    "meta_url": "URL: ",
-    "meta_period": "Period: ",
+    "meta_doi": "DOI:",
+    "meta_pub": "Publication:",
+    "meta_url": "URL:",
+    "meta_period": "Period:",
     "files_title": "Attached files",
     "download": "Download",
     "view": "View",
-    "no_files": "No attached files."
+    "no_files": "No files",
+    "download_error": "Error downloading file",
+    "exporting": "Generating archive...",
+    "export_error": "Error exporting",
+    "delete_request_success": "Deletion request submitted successfully",
+    "delete_request_error": "Error submitting deletion request",
+    "delete_request_title": "Deletion Request",
+    "delete_reason_placeholder": "Please specify the reason for deletion...",
+    "export_zip": "Export (ZIP)",
+    "request_delete": "Request deletion"
   },
   "queries": {
     "title": "My Queries",
@@ -221,5 +319,12 @@
     "filter_tags": "Tags",
     "filter_everywhere": "Search everywhere: Yes",
     "filter_none": "No filters"
+  },
+  "audio": {
+    "start_recording": "Record voice note",
+    "stop_recording": "Stop recording",
+    "decoding": "Decoding...",
+    "mic_error": "Failed to access microphone",
+    "processing_error": "Error processing and transcribing audio"
   }
 }

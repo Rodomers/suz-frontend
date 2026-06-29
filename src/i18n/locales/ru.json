@@ -1,6 +1,6 @@
 {
   "common": {
-    "app_name": "СУЗ ОПД-26",
+    "app_name": "СУЗ-26",
     "loading": "Загрузка...",
     "error": "Произошла ошибка",
     "edit": "Редактировать",
@@ -9,7 +9,12 @@
     "confirm": "Подтвердить",
     "delete": "Удалить",
     "create": "Создать",
-    "actions": "Действия"
+    "actions": "Действия",
+    "success": "Успешно",
+    "apply": "Применить",
+    "ok": "ОК",
+    "send": "Отправить",
+    "sending": "Отправка..."
   },
   "auth": {
     "login": "Войти",
@@ -102,7 +107,9 @@
       "dateTo": "Дата до",
       "tags": "Метки",
       "tags_placeholder": "Введите теги через новую строку",
-      "attachments": "Приложения"
+      "attachments": "Приложения",
+      "date_placeholder": "ГГГГ, ММ.ГГГГ или ДД.ММ.ГГГГ",
+      "compress_images": "Сжимать изображения перед отправкой"
     },
     "dnd": {
       "text": "Перетащите файлы сюда или нажмите кнопку",
@@ -111,7 +118,53 @@
     "submit_edit": "Обновить",
     "submit_create": "Создать",
     "success_edit": "Объект успешно обновлен",
-    "success_create": "Объект успешно создан"
+    "success_create": "Объект успешно создан",
+    "not_specified": "Не указано",
+    "errors": {
+      "load_failed": "Ошибка загрузки файлов или данных объекта!",
+      "blocked_file": "Файлы с расширениями .exe, .bat, .sh, .php, .js запрещены для загрузки!",
+      "delete_file_failed": "Не удалось удалить файл с сервера",
+      "invalid_date_from": "Неверный формат даты начала. Допустимые форматы: ГГГГ, ММ.ГГГГ или ДД.ММ.ГГГГ",
+      "invalid_date_to": "Неверный формат даты окончания. Допустимые форматы: ГГГГ, ММ.ГГГГ или ДД.ММ.ГГГГ",
+      "save_failed": "Не удалось сохранить информационный объект. Пожалуйста, попробуйте еще раз."
+    },
+    "info": {
+      "form_cleared": "Форма очищена",
+      "copy_created": "Черновик копии готов к сохранению"
+    },
+    "editor": {
+      "tab_edit": "Редактор",
+      "tab_preview": "Предпросмотр",
+      "bold": "жирный",
+      "italic": "курсив",
+      "strike": "зачеркнутый",
+      "heading": "Заголовок",
+      "bullet_list": "список",
+      "numbered_list": "элемент",
+      "code": "код",
+      "bold_tooltip": "Жирный",
+      "italic_tooltip": "Курсив",
+      "strike_tooltip": "Зачеркнутый",
+      "headings_tooltip": "Заголовки",
+      "bullet_tooltip": "Маркированный список",
+      "numbered_tooltip": "Нумерованный список",
+      "code_tooltip": "Блок кода",
+      "bullet_text": "элемент списка",
+      "numbered_text": "элемент списка",
+      "heading1": "Заголовок 1",
+      "heading2": "Заголовок 2",
+      "heading3": "Заголовок 3",
+      "no_preview": "Нет текста для предпросмотра",
+      "bullet_label": "• Список",
+      "numbered_label": "1. Список"
+    },
+    "buttons": {
+      "clear": "Очистить форму",
+      "copy": "Создать копию",
+      "create_new": "Создать новую форму"
+    },
+    "confirm_clear_title": "Подтверждение",
+    "confirm_clear_text": "Вы уверены, что хотите очистить форму? Все несохраненные изменения будут утеряны."
   },
   "search_form": {
     "title": "Поиск объектов",
@@ -169,7 +222,17 @@
     "error_create_tag": "Ошибка при создании тега",
     "error_update_tag": "Ошибка при обновлении тега",
     "error_delete_tag": "Ошибка при удалении тега",
-    "error_delete_io": "Ошибка при удалении выбранных объектов"
+    "error_delete_io": "Ошибка при удалении выбранных объектов",
+    "deletion_requests_title": "Запросы на удаление ИО",
+    "table_io_id": "ID объекта",
+    "table_author_login": "Логин автора запроса",
+    "table_reason": "Причина удаления",
+    "table_actions": "Действия",
+    "approve_delete": "Одобрить удаление",
+    "reject_delete": "Отклонить",
+    "no_deletion_requests": "Нет активных запросов на удаление",
+    "error_approve_delete": "Ошибка при одобрении удаления объекта",
+    "error_reject_delete": "Ошибка при отклонении запроса"
   },
   "admin_users": {
     "title": "Пользователи",
@@ -186,26 +249,61 @@
     "roles": "Права доступа",
     "role_user_admin": "Администратор пользователей (АП)",
     "role_data_admin": "Администратор данных (АД)",
-    "role_super_admin": "Супер-администратор (СА)"
+    "role_super_admin": "Супер-администратор (СА)",
+    "batch_update_title": "Пакетное изменение доступа",
+    "batch_update_confirm": "Вы уверены, что хотите обновить даты доступа для выбранных пользователей ({{count}} шт.)?",
+    "generate_short": "Ген.",
+    "col_organization": "Организация",
+    "col_position": "Должность",
+    "col_phone": "Телефон",
+    "col_comment": "Комментарий",
+    "col_access_start": "Дата начала",
+    "col_access_end": "Дата окончания",
+    "apply_days": "Применить дни",
+    "edit_title": "Редактировать пользователя",
+    "global_rules_label": "Глобальная ссылка на правила (для страницы авторизации)",
+    "save_rules_btn": "Сохранить ссылку",
+    "selected_count": "Выбрано пользователей: {{count}}",
+    "batch_start_label": "Дата начала:",
+    "batch_end_label": "Дата окончания:",
+    "apply_changes_btn": "Применить изменения",
+    "reset_btn": "Сбросить",
+    "col_id": "ID",
+    "col_profile_contacts": "Профиль / Контакты",
+    "col_access_period": "Период доступа",
+    "rules_not_accepted": "Не приняты",
+    "rules_accepted_at_date": "Приняты: {{date}} {{time}}",
+    "invalid_url_error": "Пожалуйста, введите корректный URL-адрес (например, https://example.com)",
+    "rules_url_success": "Ссылка на правила успешно обновлена",
+    "rules_url_error": "Ошибка при обновлении ссылки"
   },
   "view_io": {
-    "loading": "Загрузка данных карточки...",
-    "not_found": "Объект не найден.",
-    "author": "Автор: ",
-    "source": "Источник: ",
+    "loading": "Загрузка...",
+    "not_found": "Информационный объект не найден",
+    "author": "Автор:",
+    "source": "Источник:",
     "not_specified": "Не указан",
     "edit": "Редактировать",
     "tags": "Метки",
     "no_tags": "Нет меток",
     "metadata": "Метаданные",
-    "meta_doi": "DOI: ",
-    "meta_pub": "Публикация: ",
-    "meta_url": "URL: ",
-    "meta_period": "Период: ",
+    "meta_doi": "DOI:",
+    "meta_pub": "Публикация:",
+    "meta_url": "URL:",
+    "meta_period": "Период:",
     "files_title": "Прикрепленные файлы",
     "download": "Скачать",
     "view": "Просмотр",
-    "no_files": "Нет прикрепленных файлов."
+    "no_files": "Файлы отсутствуют",
+    "download_error": "Ошибка при скачивании файла",
+    "exporting": "Формирование архива...",
+    "export_error": "Ошибка при экспорте",
+    "delete_request_success": "Запрос на удаление успешно отправлен",
+    "delete_request_error": "Ошибка при отправке запроса",
+    "delete_request_title": "Запрос на удаление",
+    "delete_reason_placeholder": "Укажите причину удаления объекта...",
+    "export_zip": "Экспорт (ZIP)",
+    "request_delete": "Запросить удаление"
   },
   "queries": {
     "title": "Мои запросы",
@@ -221,5 +319,12 @@
     "filter_tags": "Метки",
     "filter_everywhere": "Искать везде: Да",
     "filter_none": "Без фильтров"
+  },
+  "audio": {
+    "start_recording": "Записать голосовую заметку",
+    "stop_recording": "Остановить запись",
+    "decoding": "Расшифровка...",
+    "mic_error": "Не удалось получить доступ к микрофону",
+    "processing_error": "Ошибка при обработке и расшифровке аудиозаписи"
   }
 }

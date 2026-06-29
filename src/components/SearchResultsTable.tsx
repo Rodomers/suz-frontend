@@ -55,11 +55,11 @@ export const SearchResultsTable = ({ results, onPageChange, isLoading }: SearchR
                       tagsArray = rawTags;
                     } else if (typeof rawTags === 'string') {
                       try {
-                        const parsed = JSON.parse(rawTags);
-                        tagsArray = Array.isArray(parsed) ? parsed : [rawTags];
-                      } catch (_) {
-                        tagsArray = rawTags.split(',').map(t => t.trim());
-                      }
+                            const parsed = JSON.parse(rawTags as string);
+                            tagsArray = Array.isArray(parsed) ? parsed : [rawTags];
+                          } catch (_) {
+                            tagsArray = (rawTags as string).split(',').map((t: string) => t.trim());
+                          }
                     }
 
                     if (tagsArray.length === 0) return null;

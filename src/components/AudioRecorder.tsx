@@ -1,15 +1,36 @@
 import React, { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../api';
+import { ConfirmModal } from './ConfirmModal';
 
 interface AudioRecorderProps {
   onTranscriptionComplete: (text: string) => void;
 }
 
 export const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscriptionComplete }) => {
+  const { t } = useTranslation();
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+
+  const [errorModal, setErrorModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+  }>({
+    isOpen: false,
+    title: '',
+    message: ''
+  });
+
+  const showError = (titleKey: string, titleDefault: string, messageKey: string, messageDefault: string) => {
+    setErrorModal({
+      isOpen: true,
+      title: t(titleKey, titleDefault),
+      message: t(messageKey, messageDefault)
+    });
+  };
 
   const startRecording = async () => {
     audioChunksRef.current = [];
@@ -33,7 +54,12 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscriptionCom
       mediaRecorder.start();
       setIsRecording(true);
     } catch (_) {
-      alert('Не удалось получить доступ к микрофону');
+      showError(
+        'common.error',
+        'Ошибка',
+        'audio.mic_error',
+        'Не удалось получить доступ к микрофону'
+      );
     }
   };
 
@@ -57,7 +83,12 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscriptionCom
         onTranscriptionComplete(response.data.text);
       }
     } catch (_) {
-      alert('Ошибка при обработке и расшифровке аудиозаписи');
+      showError(
+        'common.error',
+        'Ошибка',
+        'audio.processing_error',
+        'Ошибка при обработке и расшифровке аудиозаписи'
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -71,7 +102,7 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscriptionCom
           disabled={isProcessing}
           onClick={startRecording}
           className="p-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white rounded-lg transition-colors flex items-center justify-center"
-          title="Записать голосовую заметку"
+          title={t('audio.start_recording', 'Записать голосовую заметку')}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
@@ -82,7 +113,7 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscriptionCom
           type="button"
           onClick={stopRecording}
           className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center justify-center animate-pulse"
-          title="Остановить запись"
+          title={t('audio.stop_recording', 'Остановить запись')}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -90,7 +121,17 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({ onTranscriptionCom
           </svg>
         </button>
       )}
-      {isProcessing && <span className="text-xs text-gray-500 animate-pulse">Расшифровка...</span>}
+      {isProcessing && <span className="text-xs text-gray-500 animate-pulse">{t('audio.decoding', 'Расшифровка...')}</span>}
+
+      <ConfirmModal
+        isOpen={errorModal.isOpen}
+        title={errorModal.title}
+        message={errorModal.message}
+        confirmText={t('common.ok', 'OK')}
+        isDanger={false}
+        onConfirm={() => setErrorModal(prev => ({ ...prev, isOpen: false }))}
+        onCancel={() => setErrorModal(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

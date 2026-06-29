@@ -17,7 +17,7 @@ export const ProtectedRoute = () => {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  if (user.rules_accepted == false && location.pathname !== '/rules') {
+  if (((user as unknown) as Record<string, unknown>).rules_accepted === false && location.pathname !== '/rules') {
     return <Navigate to="/rules" replace />;
   }
 

@@ -63,28 +63,32 @@ export const IOForm = ({ ioId }: IOFormProps) => {
     let selectionLength = 0;
 
     if (syntax === 'bold') {
-      replacement = `**${selectedText || placeholder || 'текст'}**`;
+      const defaultText = t('io_form.editor.bold');
+      replacement = `**${selectedText || placeholder || defaultText}**`;
       selectionOffset = start + 2;
-      selectionLength = selectedText ? selectedText.length : (placeholder || 'текст').length;
+      selectionLength = selectedText ? selectedText.length : (placeholder || defaultText).length;
     } else if (syntax === 'italic') {
-      replacement = `*${selectedText || placeholder || 'текст'}*`;
+      const defaultText = t('io_form.editor.italic');
+      replacement = `*${selectedText || placeholder || defaultText}*`;
       selectionOffset = start + 1;
-      selectionLength = selectedText ? selectedText.length : (placeholder || 'текст').length;
+      selectionLength = selectedText ? selectedText.length : (placeholder || defaultText).length;
     } else if (syntax === 'strike') {
-      replacement = `~~${selectedText || placeholder || 'текст'}~~`;
+      const defaultText = t('io_form.editor.strike');
+      replacement = `~~${selectedText || placeholder || defaultText}~~`;
       selectionOffset = start + 2;
-      selectionLength = selectedText ? selectedText.length : (placeholder || 'текст').length;
+      selectionLength = selectedText ? selectedText.length : (placeholder || defaultText).length;
     } else if (syntax === 'h1') {
-      replacement = `\n# ${selectedText || placeholder || 'Заголовок 1'}\n`;
+      replacement = `\n# ${selectedText || placeholder || t('io_form.editor.heading1')}\n`;
       selectionOffset = start + replacement.length;
     } else if (syntax === 'h2') {
-      replacement = `\n## ${selectedText || placeholder || 'Заголовок 2'}\n`;
+      replacement = `\n## ${selectedText || placeholder || t('io_form.editor.heading2')}\n`;
       selectionOffset = start + replacement.length;
     } else if (syntax === 'h3') {
-      replacement = `\n### ${selectedText || placeholder || 'Заголовок 3'}\n`;
+      replacement = `\n### ${selectedText || placeholder || t('io_form.editor.heading3')}\n`;
       selectionOffset = start + replacement.length;
     } else if (syntax === 'bullet' || syntax === 'number') {
-      const textToProcess = selectedText || placeholder || 'пункт';
+      const defaultText = syntax === 'bullet' ? t('io_form.editor.bullet_text') : t('io_form.editor.numbered_text');
+      const textToProcess = selectedText || placeholder || defaultText;
       const lines = textToProcess.split('\n');
       const processedLines = lines.map((line, index) => {
         if (syntax === 'bullet') {
@@ -96,7 +100,7 @@ export const IOForm = ({ ioId }: IOFormProps) => {
       replacement = `\n${processedLines.join('\n')}\n`;
       selectionOffset = start + replacement.length;
     } else if (syntax === 'code') {
-      replacement = `\n\`\`\`\n${selectedText || placeholder || 'код'}\n\`\`\`\n`;
+      replacement = `\n\`\`\`\n${selectedText || placeholder || t('io_form.editor.code')}\n\`\`\`\n`;
       selectionOffset = start + replacement.length;
     }
 
@@ -186,7 +190,7 @@ export const IOForm = ({ ioId }: IOFormProps) => {
         if (isMounted) {
           console.error(err);
           setStatus('idle');
-          showToast(t('io_form.errors.load_failed', 'Ошибка при загрузке файлов или данных объекта!'), 'error');
+          showToast(t('io_form.errors.load_failed'), 'error');
         }
       }
     };
@@ -226,7 +230,7 @@ export const IOForm = ({ ioId }: IOFormProps) => {
       const ext = '.' + file.name.split('.').pop()?.toLowerCase();
       if (blacklist.includes(ext)) {
         showToast(
-          t('io_form.errors.blocked_file', 'Файлы с расширениями .exe, .bat, .sh, .php, .js запрещены к загрузке!'),
+          t('io_form.errors.blocked_file'),
           'error'
         );
         return;
@@ -265,7 +269,7 @@ export const IOForm = ({ ioId }: IOFormProps) => {
       } catch(err) {
         console.error(err);
         setStatus('idle');
-        showToast(t('io_form.errors.delete_file_failed', 'Не удалось удалить файл с сервера'), 'error');
+        showToast(t('io_form.errors.delete_file_failed'), 'error');
       }
     }
   };
@@ -284,7 +288,7 @@ export const IOForm = ({ ioId }: IOFormProps) => {
 
     if (formData.dateFrom && !dateRegex.test(formData.dateFrom)) {
       showToast(
-        t('io_form.errors.invalid_date_from', 'Неверный формат даты начала. Допустимые форматы: ГГГГ, ММ.ГГГГ или ДД.ММ.ГГГГ'),
+        t('io_form.errors.invalid_date_from'),
         'error'
       );
       setStatus('idle');
@@ -293,7 +297,7 @@ export const IOForm = ({ ioId }: IOFormProps) => {
 
     if (formData.dateTo && !dateRegex.test(formData.dateTo)) {
       showToast(
-        t('io_form.errors.invalid_date_to', 'Неверный формат даты окончания. Допустимые форматы: ГГГГ, ММ.ГГГГ или ДД.ММ.ГГГГ'),
+        t('io_form.errors.invalid_date_to'),
         'error'
       );
       setStatus('idle');
@@ -311,7 +315,7 @@ export const IOForm = ({ ioId }: IOFormProps) => {
       publication_title: formData.publicationName || null,
       publication_date_from_raw: formData.dateFrom || '',
       publication_date_to_raw: formData.dateTo || '',
-      publication_date_raw: formData.dateFrom || formData.dateTo || 'Не указано',
+      publication_date_raw: formData.dateFrom || formData.dateTo || t('io_form.not_specified'),
       publication_date: new Date().toISOString() 
     };
 
@@ -320,12 +324,12 @@ export const IOForm = ({ ioId }: IOFormProps) => {
       
       if (targetIoId) {
         await ioApi.updateIO(targetIoId, apiPayload as unknown as IOData);
-        showToast(t('io_form.success_edit', 'Информационный объект успешно изменен'), 'success');
+        showToast(t('io_form.success_edit'), 'success');
       } else {
         const res = await ioApi.createIO(apiPayload as unknown as IOData);
         const responseData = res.data as unknown as Record<string, unknown>;
         targetIoId = String(responseData.info_id || responseData.id);
-        showToast(t('io_form.success_create', 'Информационный объект успешно создан'), 'success');
+        showToast(t('io_form.success_create'), 'success');
       }
 
       if (pendingFiles.length > 0) {
@@ -346,7 +350,7 @@ export const IOForm = ({ ioId }: IOFormProps) => {
     } catch (err) {
       console.error(err);
       setStatus('idle');
-      showToast(t('io_form.errors.save_failed', 'Не удалось сохранить информационный объект. Попробуйте еще раз.'), 'error');
+      showToast(t('io_form.errors.save_failed'), 'error');
     }
   };
 
@@ -361,7 +365,7 @@ export const IOForm = ({ ioId }: IOFormProps) => {
     setLastSaved(null);
     setStatus('idle');
     setShowClearConfirm(false);
-    showToast(t('io_form.info.form_cleared', 'Форма очищена'), 'info');
+    showToast(t('io_form.info.form_cleared'), 'info');
   };
 
   const handleCreateCopy = () => {
@@ -370,7 +374,7 @@ export const IOForm = ({ ioId }: IOFormProps) => {
     setPendingFiles([]);
     setStatus('idle');
     setLastSaved(null);
-    showToast(t('io_form.info.copy_created', 'Черновик копии готов к сохранению'), 'info');
+    showToast(t('io_form.info.copy_created'), 'info');
   };
 
   const handleCreateNew = () => {
@@ -455,24 +459,24 @@ export const IOForm = ({ ioId }: IOFormProps) => {
                   {t('io_form.fields.text')} <span className="text-red-500">*</span>
                 </label>
                 <div className="flex bg-gray-200 p-0.5 rounded-md text-xs">
-                  <button type="button" onClick={() => setActiveTab('edit')} className={`px-2 py-1 rounded ${activeTab === 'edit' ? 'bg-white font-medium shadow-sm text-gray-800' : 'text-gray-600'}`}>Редактор</button>
-                  <button type="button" onClick={() => setActiveTab('preview')} className={`px-2 py-1 rounded ${activeTab === 'preview' ? 'bg-white font-medium shadow-sm text-gray-800' : 'text-gray-600'}`}>Просмотр</button>
+                  <button type="button" onClick={() => setActiveTab('edit')} className={`px-2 py-1 rounded ${activeTab === 'edit' ? 'bg-white font-medium shadow-sm text-gray-800' : 'text-gray-600'}`}>{t('io_form.editor.tab_edit')}</button>
+                  <button type="button" onClick={() => setActiveTab('preview')} className={`px-2 py-1 rounded ${activeTab === 'preview' ? 'bg-white font-medium shadow-sm text-gray-800' : 'text-gray-600'}`}>{t('io_form.editor.tab_preview')}</button>
                 </div>
               </div>
               {activeTab === 'edit' && (
                 <div className="flex items-center flex-wrap gap-1">
-                  <button type="button" onClick={() => insertMarkdown('bold', 'жирный')} className="px-2 py-1 text-xs font-bold bg-white border border-gray-300 rounded hover:bg-gray-100 transition-colors text-gray-800" title="Жирный">B</button>
-                  <button type="button" onClick={() => insertMarkdown('italic', 'курсив')} className="px-2 py-1 text-xs italic bg-white border border-gray-300 rounded hover:bg-gray-100 transition-colors text-gray-800" title="Курсив">I</button>
-                  <button type="button" onClick={() => insertMarkdown('strike', 'зачеркнутый')} className="px-2 py-1 text-xs line-through bg-white border border-gray-300 rounded hover:bg-gray-100 transition-colors text-gray-800" title="Зачёркнутый">S</button>
-                  <select onChange={(e) => { if(e.target.value) { insertMarkdown(e.target.value); e.target.value = ''; } }} className="px-1 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-100 transition-colors text-gray-800 outline-none" title="Заголовки">
-                    <option value="">Заголовок</option>
+                  <button type="button" onClick={() => insertMarkdown('bold', t('io_form.editor.bold'))} className="px-2 py-1 text-xs font-bold bg-white border border-gray-300 rounded hover:bg-gray-100 transition-colors text-gray-800" title={t('io_form.editor.bold_tooltip')}>B</button>
+                  <button type="button" onClick={() => insertMarkdown('italic', t('io_form.editor.italic'))} className="px-2 py-1 text-xs italic bg-white border border-gray-300 rounded hover:bg-gray-100 transition-colors text-gray-800" title={t('io_form.editor.italic_tooltip')}>I</button>
+                  <button type="button" onClick={() => insertMarkdown('strike', t('io_form.editor.strike'))} className="px-2 py-1 text-xs line-through bg-white border border-gray-300 rounded hover:bg-gray-100 transition-colors text-gray-800" title={t('io_form.editor.strike_tooltip')}>S</button>
+                  <select onChange={(e) => { if(e.target.value) { insertMarkdown(e.target.value); e.target.value = ''; } }} className="px-1 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-100 transition-colors text-gray-800 outline-none" title={t('io_form.editor.headings_tooltip')}>
+                    <option value="">{t('io_form.editor.heading')}</option>
                     <option value="h1">H1</option>
                     <option value="h2">H2</option>
                     <option value="h3">H3</option>
                   </select>
-                  <button type="button" onClick={() => insertMarkdown('bullet', 'пункт')} className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-100 transition-colors text-gray-800" title="Маркированный список">• Список</button>
-                  <button type="button" onClick={() => insertMarkdown('number', 'пункт')} className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-100 transition-colors text-gray-800" title="Нумерованный список">1. Список</button>
-                  <button type="button" onClick={() => insertMarkdown('code', 'код')} className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-100 transition-colors text-gray-800" title="Блок кода">&lt;/&gt;</button>
+                  <button type="button" onClick={() => insertMarkdown('bullet', t('io_form.editor.bullet_list'))} className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-100 transition-colors text-gray-800" title={t('io_form.editor.bullet_tooltip')}>{t('io_form.editor.bullet_label')}</button>
+                  <button type="button" onClick={() => insertMarkdown('number', t('io_form.editor.numbered_list'))} className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-100 transition-colors text-gray-800" title={t('io_form.editor.numbered_tooltip')}>{t('io_form.editor.numbered_label')}</button>
+                  <button type="button" onClick={() => insertMarkdown('code', t('io_form.editor.code'))} className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-100 transition-colors text-gray-800" title={t('io_form.editor.code_tooltip')}>&lt;/&gt;</button>
                   <div className="w-px h-4 bg-gray-300 mx-1 hidden sm:block"></div>
                   <AudioRecorder 
                     onTranscriptionComplete={(transcribedText) => {
@@ -500,7 +504,7 @@ export const IOForm = ({ ioId }: IOFormProps) => {
                 {formData.text ? (
                   <div dangerouslySetInnerHTML={{ __html: parseMarkdownToHtml(formData.text) }} className="break-words" />
                 ) : (
-                  <span className="text-gray-400 italic">Нет текста для предварительного просмотра</span>
+                  <span className="text-gray-400 italic">{t('io_form.editor.no_preview')}</span>
                 )}
               </div>
             )}
@@ -533,12 +537,12 @@ export const IOForm = ({ ioId }: IOFormProps) => {
 
           <div className="col-span-1">
             <label className="block text-sm font-medium text-gray-700">{t('io_form.fields.dateFrom')}</label>
-            <input type="text" name="dateFrom" value={formData.dateFrom} onChange={handleChange} onBlur={handleDateBlur} placeholder="ГГГГ, ММ.ГГГГ или ДД.ММ.ГГГГ" className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
+            <input type="text" name="dateFrom" value={formData.dateFrom} onChange={handleChange} onBlur={handleDateBlur} placeholder={t('io_form.fields.date_placeholder')} className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
           </div>
 
           <div className="col-span-1">
             <label className="block text-sm font-medium text-gray-700">{t('io_form.fields.dateTo')}</label>
-            <input type="text" name="dateTo" value={formData.dateTo} onChange={handleChange} onBlur={handleDateBlur} placeholder="ГГГГ, ММ.ГГГГ или ДД.ММ.ГГГГ" className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
+            <input type="text" name="dateTo" value={formData.dateTo} onChange={handleChange} onBlur={handleDateBlur} placeholder={t('io_form.fields.date_placeholder')} className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
           </div>
 
           <div className="col-span-1 md:col-span-2">
@@ -558,7 +562,7 @@ export const IOForm = ({ ioId }: IOFormProps) => {
                 className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
               />
               <label htmlFor="compressActive" className="text-sm text-gray-700 select-none cursor-pointer">
-                {t('io_form.fields.compress_images', 'Сжимать изображения перед отправкой')}
+                {t('io_form.fields.compress_images')}
               </label>
             </div>
 
@@ -595,7 +599,7 @@ export const IOForm = ({ ioId }: IOFormProps) => {
               onClick={() => setShowClearConfirm(true)}
               className="px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors text-sm shadow-sm"
             >
-              {t('io_form.buttons.clear', 'Очистить форму')}
+              {t('io_form.buttons.clear')}
             </button>
 
             {currentIoId && (
@@ -604,7 +608,7 @@ export const IOForm = ({ ioId }: IOFormProps) => {
                 onClick={handleCreateCopy}
                 className="px-4 py-2 bg-indigo-50 text-indigo-700 font-medium rounded-lg hover:bg-indigo-100 transition-colors text-sm shadow-sm border border-indigo-100"
               >
-                {t('io_form.buttons.copy', 'Создать копию')}
+                {t('io_form.buttons.copy')}
               </button>
             )}
 
@@ -614,7 +618,7 @@ export const IOForm = ({ ioId }: IOFormProps) => {
                 onClick={handleCreateNew}
                 className="px-4 py-2 bg-green-50 text-green-700 font-medium rounded-lg hover:bg-green-100 transition-colors text-sm shadow-sm border border-green-100"
               >
-                {t('io_form.buttons.create_new', 'Создать новую форму')}
+                {t('io_form.buttons.create_new')}
               </button>
             )}
           </div>
@@ -633,10 +637,10 @@ export const IOForm = ({ ioId }: IOFormProps) => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 animate-fadeIn">
           <div className="bg-white rounded-xl p-6 max-w-sm w-full shadow-lg border border-gray-100">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              {t('io_form.confirm_clear_title', 'Подтверждение')}
+              {t('io_form.confirm_clear_title')}
             </h3>
             <p className="text-gray-600 text-sm mb-6">
-              {t('io_form.confirm_clear_text', 'Вы действительно хотите очистить форму? Все несохраненные изменения будут утеряны.')}
+              {t('io_form.confirm_clear_text')}
             </p>
             <div className="flex justify-end gap-3">
               <button
@@ -644,14 +648,14 @@ export const IOForm = ({ ioId }: IOFormProps) => {
                 onClick={() => setShowClearConfirm(false)}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
               >
-                {t('common.cancel', 'Отмена')}
+                {t('common.cancel')}
               </button>
               <button
                 type="button"
                 onClick={handleClearForm}
                 className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
               >
-                {t('common.clear', 'Очистить')}
+                {t('common.clear')}
               </button>
             </div>
           </div>

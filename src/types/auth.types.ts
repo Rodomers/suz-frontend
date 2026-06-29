@@ -1,6 +1,6 @@
 export interface UserProfile {
   id: number;
-  login: string;
+  login?: string;
   name: string | null;
   email: string | null;
   is_user_admin: boolean;
@@ -12,6 +12,8 @@ export interface UserProfile {
   position?: string | null;
   phone?: string | null;
   comment?: string | null;
+  rules_accepted?: boolean;
+  rulesAccepted?: boolean;
 }
 
 export type User = UserProfile;
