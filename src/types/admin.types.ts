@@ -6,6 +6,8 @@ export interface UserResponse {
   is_super_admin: boolean;
   is_data_admin: boolean;
   is_user_admin: boolean;
+  access_start: string | null;
+  access_end: string | null;
 }
 
 export interface DeletionRequest {

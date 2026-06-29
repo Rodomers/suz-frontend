@@ -1,14 +1,26 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/useAuthStore';
-import { mapRole } from '../api';
+import { mapRole, api } from '../api';
 
 export const MainLayout = () => {
-  const { user, logout } = useAuthStore();
+  const currentUser = useAuthStore(state => state.user);
+  const logout = useAuthStore(state => state.logout);
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [accessEnd, setAccessEnd] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (currentUser) {
+      api.get('/users/me')
+        .then(res => {
+          setAccessEnd(res.data?.access_end || null);
+        })
+        .catch(() => setAccessEnd(null));
+    }
+  }, [currentUser]);
 
   const handleLogout = () => {
     logout();
@@ -21,22 +33,21 @@ export const MainLayout = () => {
   };
 
   const menuItems = [
-      { path: '/', label: t('menu.input'), roles: ['П', 'АД', 'АП', 'СА'] },
-      { path: '/search', label: t('menu.search'), roles: ['П', 'АД', 'АП', 'СА'] },
-      { path: '/queries', label: t('menu.queries'), roles: ['П', 'АД', 'АП', 'СА'] },
-      { path: '/admin', label: t('menu.admin_export'), roles: ['АД', 'СА'] },
-      { path: '/admin-data', label: t('menu.admin_data'), roles: ['АД', 'СА'] },
-      { path: '/admin-users', label: t('menu.admin_users'), roles: ['АП', 'СА'] },
+    { path: '/', label: t('menu.input'), roles: ['П', 'АД', 'АП', 'СА'] },
+    { path: '/search', label: t('menu.search'), roles: ['П', 'АД', 'АП', 'СА'] },
+    { path: '/queries', label: t('menu.queries'), roles: ['П', 'АД', 'АП', 'СА'] },
+    { path: '/control/main-ad-panel', label: t('menu.admin_export'), roles: ['АД', 'СА'] },
+    { path: '/control/system-ad-data', label: t('menu.admin_data'), roles: ['АД', 'СА'] },
+    { path: '/control/system-ap-users', label: t('menu.admin_users'), roles: ['АП', 'СА'] },
   ];
 
   const visibleMenu = menuItems.filter(item => {
-    if (!user) return false;
-    if (item.path === '/admin-users') return user.is_user_admin || user.is_super_admin;
-    if (item.path === '/admin-data') return user.is_data_admin || user.is_super_admin;
-    if (item.path === '/admin') return user.is_super_admin;
+    if (!currentUser) return false;
+    if (item.path === '/control/system-ap-users') return currentUser.is_user_admin || currentUser.is_super_admin;
+    if (item.path === '/control/system-ad-data') return currentUser.is_data_admin || currentUser.is_super_admin;
+    if (item.path === '/control/main-ad-panel') return currentUser.is_super_admin;
     return true;
   });
-  
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden font-sans">
@@ -91,12 +102,24 @@ export const MainLayout = () => {
               onClick={toggleLanguage}
               className="px-3 py-1.5 text-xs font-semibold tracking-wider text-gray-600 uppercase bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
             >
-              {i18n.language.toUpperCase()}
+              {(i18n.language || 'ru').toUpperCase()}
             </button>
+
+            {accessEnd && (
+              <div className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-slate-600 bg-slate-100 rounded-md border border-slate-200/60">
+                <svg className="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>
+                  {t('layout.access_until', 'Доступ до:')} {new Date(accessEnd).toLocaleDateString()}
+                </span>
+              </div>
+            )}
+
             <div className="flex items-center space-x-4 border-l border-gray-200 pl-5">
               <div className="flex flex-col items-end">
-                <span className="text-sm font-semibold text-gray-900">{user?.name}</span>
-                <span className="text-xs text-gray-500">{t('layout.role', 'Роль')}: {mapRole(user!)}</span>
+                <span className="text-sm font-semibold text-gray-900">{currentUser?.name}</span>
+                <span className="text-xs text-gray-500">{t('layout.role', 'Роль')}: {currentUser ? mapRole(currentUser) : ''}</span>
               </div>
               <button
                 onClick={handleLogout}
