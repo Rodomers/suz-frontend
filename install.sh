@@ -9,20 +9,6 @@ log_error() {
     echo -e "\e[31mError: $1\e[0m" >&2
 }
 
-validate_ip() {
-    local ip=$1
-    if [[ $ip =~ ^([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})$ ]]; then
-        for i in 1 2 3 4; do
-            if [ "${BASH_REMATCH[$i]}" -gt 255 ]; then
-                return 1
-            fi
-        done
-        return 0
-    else
-        return 1
-    fi
-}
-
 validate_port() {
     local port=$1
     if [[ "$port" =~ ^[0-9]+$ ]] && [ "$port" -ge 1024 ] && [ "$port" -le 65535 ]; then
@@ -68,14 +54,14 @@ fi
 
 mkdir -p "$TARGET_DIR"
 
-while true; do
-    read -p "Enter Server IP Address (SERVER_IP): " SERVER_IP
-    if validate_ip "$SERVER_IP"; then
-        break
-    else
-        log_error "Invalid IPv4 address format. Please try again."
-    fi
-done
+read -p "Enter Backend Domain (e.g., api.domain.com): " BACKEND_HOST
+read -p "Enter Frontend Domain (e.g., kms.domain.com): " FRONTEND_HOST
+read -p "Use SSL/HTTPS? (y/n): " ssl_answer
+if [ "$ssl_answer" = "y" ] || [ "$ssl_answer" = "Y" ]; then
+    PROTOCOL="https"
+else
+    PROTOCOL="http"
+fi
 
 while true; do
     read -p "Enter Database Port [default: 5433]: " DB_PORT
@@ -208,11 +194,11 @@ if [ "$IS_UPDATE" = false ] || [ ! -f "$TARGET_DIR/backend/.venv/bin/pip" ]; the
     IS_MODERN_PY=$(python3 -c 'import sys; print(sys.version_info >= (3, 12))')
     if [ "$IS_MODERN_PY" = "True" ]; then
         echo "Modern Python detected (3.12+). Installing Python 3.11 compatibility layer..."
-        apt-get update > /dev/null 2>&1
-        apt-get install -y software-properties-common > /dev/null 2>&1
-        add-apt-repository -y ppa:deadsnakes/ppa > /dev/null 2>&1
-        apt-get update > /dev/null 2>&1
-        apt-get install -y python3.11 python3.11-venv > /dev/null 2>&1
+        run_safe apt-get update
+        run_safe apt-get install -y software-properties-common gnupg ca-certificates
+        run_safe add-apt-repository -y ppa:deadsnakes/ppa
+        run_safe apt-get update
+        run_safe apt-get install -y python3.11 python3.11-venv
         run_safe python3.11 -m venv "$TARGET_DIR/backend/.venv"
     else
         if ! dpkg -s python3-pip &>/dev/null || ! dpkg -s python3-venv &>/dev/null; then
@@ -233,9 +219,17 @@ touch "$env_file"
 sed -i '/^DB_PORT=/d' "$env_file"
 sed -i '/^DATABASE_URL=/d' "$env_file"
 sed -i '/^ALLOWED_ORIGINS=/d' "$env_file"
+sed -i '/^SERVER_HOST=/d' "$env_file"
+sed -i '/^BACKEND_HOST=/d' "$env_file"
+sed -i '/^FRONTEND_HOST=/d' "$env_file"
+sed -i '/^PROTOCOL=/d' "$env_file"
 echo "DB_PORT=$DB_PORT" >> "$env_file"
 echo "DATABASE_URL=postgresql://kms_user:kms_password@localhost:$DB_PORT/kms_db" >> "$env_file"
-echo "ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:$FRONTEND_PORT,http://127.0.0.1:$FRONTEND_PORT,http://$SERVER_IP:$FRONTEND_PORT" >> "$env_file"
+echo "ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:$FRONTEND_PORT,http://127.0.0.1:$FRONTEND_PORT,$PROTOCOL://$FRONTEND_HOST,$PROTOCOL://$FRONTEND_HOST:$FRONTEND_PORT" >> "$env_file"
+echo "SERVER_HOST=$BACKEND_HOST" >> "$env_file"
+echo "BACKEND_HOST=$BACKEND_HOST" >> "$env_file"
+echo "FRONTEND_HOST=$FRONTEND_HOST" >> "$env_file"
+echo "PROTOCOL=$PROTOCOL" >> "$env_file"
 
 while IFS= read -r line || [ -n "$line" ]; do
     if [ -n "$line" ]; then
@@ -286,9 +280,13 @@ fi
 cd - > /dev/null
 export PATH="$original_path"
 
-find "$TARGET_DIR/frontend" -type f \( -name "*.js" -o -name "*.ts" -o -name "*.tsx" -o -name "*.html" \) -exec sed -i "s|http://localhost:[0-9]*|http://$SERVER_IP:$BACKEND_PORT|g" {} +
-find "$TARGET_DIR/frontend" -type f \( -name "*.js" -o -name "*.ts" -o -name "*.tsx" -o -name "*.html" \) -exec sed -i "s|http://127.0.0.1:[0-9]*|http://$SERVER_IP:$BACKEND_PORT|g" {} +
-find "$TARGET_DIR/frontend" -type f \( -name "*.js" -o -name "*.ts" -o -name "*.tsx" -o -name "*.html" \) -exec sed -i "s|http://$SERVER_IP:[0-9]*|http://$SERVER_IP:$BACKEND_PORT|g" {} +
+if [ "$PROTOCOL" = "https" ]; then
+    find "$TARGET_DIR/frontend" -type f \( -name "*.js" -o -name "*.ts" -o -name "*.tsx" -o -name "*.html" \) -exec sed -i "s|http://localhost:[0-9]*|https://$BACKEND_HOST|g" {} +
+    find "$TARGET_DIR/frontend" -type f \( -name "*.js" -o -name "*.ts" -o -name "*.tsx" -o -name "*.html" \) -exec sed -i "s|http://127.0.0.1:[0-9]*|https://$BACKEND_HOST|g" {} +
+else
+    find "$TARGET_DIR/frontend" -type f \( -name "*.js" -o -name "*.ts" -o -name "*.tsx" -o -name "*.html" \) -exec sed -i "s|http://localhost:[0-9]*|http://$BACKEND_HOST:$BACKEND_PORT|g" {} +
+    find "$TARGET_DIR/frontend" -type f \( -name "*.js" -o -name "*.ts" -o -name "*.tsx" -o -name "*.html" \) -exec sed -i "s|http://127.0.0.1:[0-9]*|http://$BACKEND_HOST:$BACKEND_PORT|g" {} +
+fi
 
 cat << EOF > /etc/systemd/system/kms-backend.service
 [Unit]
