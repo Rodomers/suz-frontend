@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { UserProfile } from '../types/auth.types';
+import { api } from '../api';
 
 interface AuthState {
   user: UserProfile | null;
@@ -24,7 +25,16 @@ export const useAuthStore = create<AuthState>((set) => ({
       },
       isAuth: true,
     }),
-  logout: () => set({ user: null, isAuth: false, isInitialized: true }),
+  logout: () => {
+    api.post('/logout').catch(() => {});
+    
+    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
+    
+    document.cookie = "session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    
+    set({ user: null, isAuth: false, isInitialized: true });
+  },
   setAuth: (userData) =>
     set({
       user: {

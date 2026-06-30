@@ -245,6 +245,7 @@
     "col_name": "Full Name",
     "col_email": "Email",
     "col_role": "Permissions",
+    "col_rules_status": "Rules Accepted",
     "empty": "No data found",
     "roles": "Access Rights",
     "role_user_admin": "User Admin (AP)",

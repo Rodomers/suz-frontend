@@ -641,6 +641,7 @@ export const AdminUsersPage = () => {
               </th>
               <th className="p-4 w-[64px] min-w-[64px] sticky left-[48px] top-0 bg-gray-50 z-30">{t('admin_users.col_id')}</th>
               <th className="p-4 w-[150px] min-w-[150px] sticky left-[112px] top-0 bg-gray-50 z-30">{t('admin_users.col_login')}</th>
+              <th className="p-4 sticky top-0 bg-gray-50 z-10">{t('admin_users.col_rules_status')}</th>
               <th className="p-4 sticky top-0 bg-gray-50 z-10">{t('admin_users.col_name')}</th>
               <th className="p-4 sticky top-0 bg-gray-50 z-10">{t('admin_users.col_profile_contacts')}</th>
               <th className="p-4 sticky top-0 bg-gray-50 z-10">{t('admin_users.col_access_period')}</th>
@@ -650,9 +651,9 @@ export const AdminUsersPage = () => {
           </thead>
           <tbody className="text-sm divide-y divide-gray-100">
             {isLoading ? (
-              <tr><td colSpan={8} className="p-8 text-center text-gray-500">{t('common.loading')}</td></tr>
+              <tr><td colSpan={9} className="p-8 text-center text-gray-500">{t('common.loading')}</td></tr>
             ) : users.length === 0 ? (
-              <tr><td colSpan={8} className="p-8 text-center text-gray-500">{t('admin_users.empty')}</td></tr>
+              <tr><td colSpan={9} className="p-8 text-center text-gray-500">{t('admin_users.empty')}</td></tr>
             ) : (
               users.map(u => (
                 <tr key={u.id} className="group hover:bg-gray-50 transition-colors">
@@ -662,17 +663,19 @@ export const AdminUsersPage = () => {
                   <td className="p-4 w-[64px] min-w-[64px] sticky left-[48px] bg-white z-20 text-gray-500 group-hover:bg-gray-50 transition-colors">{u.id}</td>
                   <td className="p-4 w-[150px] min-w-[150px] sticky left-[112px] bg-white z-20 font-medium text-gray-900 group-hover:bg-gray-50 transition-colors">
                     <div>{u.login}</div>
+                  </td>
+                  <td className="p-4 text-gray-700">
                     {(() => {
                       if (!u.rules_accepted || !u.rules_accepted_at || u.rules_accepted_at.startsWith('1970')) {
                         return (
-                          <span className="text-[10px] text-red-600 bg-red-50 px-1.5 py-0.5 rounded border border-red-200 mt-1 inline-block font-normal">
+                          <span className="text-[10px] text-red-600 bg-red-50 px-1.5 py-0.5 rounded border border-red-200 inline-block font-normal">
                             {t('admin_users.rules_not_accepted')}
                           </span>
                         );
                       }
                       const dateValid = new Date(u.rules_accepted_at);
                       return (
-                        <span className="text-[10px] text-green-600 bg-green-50 px-1.5 py-0.5 rounded border border-green-200 mt-1 inline-block font-normal">
+                        <span className="text-[10px] text-green-600 bg-green-50 px-1.5 py-0.5 rounded border border-green-200 inline-block font-normal">
                           {t('admin_users.rules_accepted_at_date', { date: dateValid.toLocaleDateString(), time: dateValid.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) })}
                         </span>
                       );

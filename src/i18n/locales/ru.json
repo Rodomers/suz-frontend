@@ -245,6 +245,7 @@
     "col_name": "ФИО",
     "col_email": "Email",
     "col_role": "Права",
+    "col_rules_status": "Правила приняты",
     "empty": "Нет данных",
     "roles": "Права доступа",
     "role_user_admin": "Администратор пользователей (АП)",
