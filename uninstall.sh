@@ -23,18 +23,7 @@ run_safe() {
     return 0
 }
 
-while true; do
-    read -p "Enter absolute target directory where KMS is installed: " TARGET_DIR
-    if [[ "$TARGET_DIR" =~ ^/ ]]; then
-        if [ -d "$TARGET_DIR" ]; then
-            break
-        else
-            log_error "Directory $TARGET_DIR does not exist. Please enter a valid installation directory."
-        fi
-    else
-        log_error "Target directory must be an absolute path starting with /"
-    fi
-done
+TARGET_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 KEEP_DATA=true
 while true; do

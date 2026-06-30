@@ -33,16 +33,13 @@ validate_port() {
 }
 
 run_safe() {
-    local temp_log=$(mktemp)
-    "$@" > "$temp_log" 2>&1
+    echo -e "\e[34m[EXEC] $*\e[0m"
+    "$@"
     local exit_code=$?
     if [ $exit_code -ne 0 ]; then
-        log_error "Command failed: $*"
-        tail -n 15 "$temp_log" >&2
-        rm -f "$temp_log"
+        log_error "Command failed with exit code $exit_code: $*"
         exit 1
     fi
-    rm -f "$temp_log"
 }
 
 check_and_kill_port() {
@@ -61,14 +58,7 @@ check_and_kill_port() {
     fi
 }
 
-while true; do
-    read -p "Enter absolute target directory (TARGET_DIR): " TARGET_DIR
-    if [[ "$TARGET_DIR" =~ ^/ ]]; then
-        break
-    else
-        log_error "Target directory must be an absolute path starting with /"
-    fi
-done
+TARGET_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 IS_UPDATE=false
 if [ -d "$TARGET_DIR" ] && [ -f "$TARGET_DIR/docker-compose.yml" ]; then
@@ -84,6 +74,16 @@ while true; do
         break
     else
         log_error "Invalid IPv4 address format. Please try again."
+    fi
+done
+
+while true; do
+    read -p "Enter Database Port [default: 5433]: " DB_PORT
+    DB_PORT=${DB_PORT:-5433}
+    if validate_port "$DB_PORT"; then
+        break
+    else
+        log_error "Invalid port number. Must be between 1024 and 65535."
     fi
 done
 
@@ -113,10 +113,15 @@ if ! command -v docker &> /dev/null || ! docker compose version &> /dev/null; th
 fi
 
 if [ "$IS_UPDATE" = false ]; then
-    check_and_kill_port 5433
-    check_and_kill_port "$BACKEND_PORT"
-    check_and_kill_port "$FRONTEND_PORT"
+    check_and_kill_port "$DB_PORT"
+    if docker ps -a --format '{{.Names}}' | grep -q "^kms_postgres$"; then
+        echo -e "\e[33mContainer 'kms_postgres' already exists. Removing it to avoid name conflict...\e[0m"
+        docker rm -f kms_postgres > /dev/null 2>&1
+    fi
 fi
+
+check_and_kill_port "$BACKEND_PORT"
+check_and_kill_port "$FRONTEND_PORT"
 
 mkdir -p "$TARGET_DIR/data"
 
@@ -132,7 +137,7 @@ services:
       POSTGRES_DB: kms_db
       POSTGRES_PASSWORD: kms_password
     ports:
-      - "5433:5432"
+      - "$DB_PORT:5432"
     volumes:
       - $TARGET_DIR/data:/var/lib/postgresql/data
 EOF
@@ -172,25 +177,54 @@ fi
 
 if [ ! -f "$TARGET_DIR/backend/app/main.py" ]; then
     cat << 'EOF' > "$TARGET_DIR/backend/app/main.py"
+import os
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI()
+
+raw_origins = os.getenv("ALLOWED_ORIGINS")
+if raw_origins:
+    origins = [o.strip() for o in raw_origins.split(",")]
+else:
+    origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True if raw_origins else False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 @app.get("/")
 def read_root():
     return {"status": "ok"}
 EOF
 fi
 
-if [ "$IS_UPDATE" = false ] || [ ! -d "$TARGET_DIR/backend/.venv" ]; then
-    run_safe python3 -m venv "$TARGET_DIR/backend/.venv" --without-pip
-    curl_status=$(curl -s -o "$TARGET_DIR/get-pip.py" -w "%{http_code}" https://bootstrap.pypa.io/get-pip.py)
-    if [ "$curl_status" -ne 200 ]; then
-        log_error "Failed to download get-pip.py. HTTP status: $curl_status"
-        exit 1
+if [ "$IS_UPDATE" = false ] || [ ! -f "$TARGET_DIR/backend/.venv/bin/pip" ]; then
+    rm -rf "$TARGET_DIR/backend/.venv"
+    IS_MODERN_PY=$(python3 -c 'import sys; print(sys.version_info >= (3, 12))')
+    if [ "$IS_MODERN_PY" = "True" ]; then
+        echo "Modern Python detected (3.12+). Installing Python 3.11 compatibility layer..."
+        apt-get update > /dev/null 2>&1
+        apt-get install -y software-properties-common > /dev/null 2>&1
+        add-apt-repository -y ppa:deadsnakes/ppa > /dev/null 2>&1
+        apt-get update > /dev/null 2>&1
+        apt-get install -y python3.11 python3.11-venv > /dev/null 2>&1
+        run_safe python3.11 -m venv "$TARGET_DIR/backend/.venv"
+    else
+        if ! dpkg -s python3-pip &>/dev/null || ! dpkg -s python3-venv &>/dev/null; then
+            echo "Installing required system python packages..."
+            apt-get update > /dev/null 2>&1
+            apt-get install -y python3-pip python3-venv > /dev/null 2>&1
+        fi
+        run_safe python3 -m venv "$TARGET_DIR/backend/.venv"
     fi
-    run_safe "$TARGET_DIR/backend/.venv/bin/python" "$TARGET_DIR/get-pip.py"
-    rm -f "$TARGET_DIR/get-pip.py"
 fi
 
+run_safe "$TARGET_DIR/backend/.venv/bin/pip" install --upgrade pip setuptools wheel
 run_safe "$TARGET_DIR/backend/.venv/bin/pip" install -r "$TARGET_DIR/backend/requirements.txt"
 run_safe "$TARGET_DIR/backend/.venv/bin/pip" install jinja2
 
@@ -198,8 +232,10 @@ env_file="$TARGET_DIR/backend/.env"
 touch "$env_file"
 sed -i '/^DB_PORT=/d' "$env_file"
 sed -i '/^DATABASE_URL=/d' "$env_file"
-echo "DB_PORT=5433" >> "$env_file"
-echo "DATABASE_URL=postgresql://kms_user:kms_password@localhost:5433/kms_db" >> "$env_file"
+sed -i '/^ALLOWED_ORIGINS=/d' "$env_file"
+echo "DB_PORT=$DB_PORT" >> "$env_file"
+echo "DATABASE_URL=postgresql://kms_user:kms_password@localhost:$DB_PORT/kms_db" >> "$env_file"
+echo "ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:$FRONTEND_PORT,http://127.0.0.1:$FRONTEND_PORT,http://$SERVER_IP:$FRONTEND_PORT" >> "$env_file"
 
 while IFS= read -r line || [ -n "$line" ]; do
     if [ -n "$line" ]; then
@@ -207,9 +243,7 @@ while IFS= read -r line || [ -n "$line" ]; do
     fi
 done < "$env_file"
 
-if [ "$IS_UPDATE" = false ]; then
-    run_safe env PYTHONPATH="$TARGET_DIR/backend" "$TARGET_DIR/backend/.venv/bin/python" "$TARGET_DIR/backend/scripts/init_db.py"
-fi
+run_safe env PYTHONPATH="$TARGET_DIR/backend" "$TARGET_DIR/backend/.venv/bin/python" "$TARGET_DIR/backend/scripts/init_db.py"
 
 mkdir -p "$TARGET_DIR/frontend"
 
@@ -252,8 +286,9 @@ fi
 cd - > /dev/null
 export PATH="$original_path"
 
-find "$TARGET_DIR/frontend" -type f -name "*.js" -exec sed -i "s|http://$SERVER_IP:[0-9]*|http://$SERVER_IP:$BACKEND_PORT|g" {} +
-find "$TARGET_DIR/frontend" -type f -name "*.js" -exec sed -i "s|http://localhost:[0-9]*|http://$SERVER_IP:$BACKEND_PORT|g" {} +
+find "$TARGET_DIR/frontend" -type f \( -name "*.js" -o -name "*.ts" -o -name "*.tsx" -o -name "*.html" \) -exec sed -i "s|http://localhost:[0-9]*|http://$SERVER_IP:$BACKEND_PORT|g" {} +
+find "$TARGET_DIR/frontend" -type f \( -name "*.js" -o -name "*.ts" -o -name "*.tsx" -o -name "*.html" \) -exec sed -i "s|http://127.0.0.1:[0-9]*|http://$SERVER_IP:$BACKEND_PORT|g" {} +
+find "$TARGET_DIR/frontend" -type f \( -name "*.js" -o -name "*.ts" -o -name "*.tsx" -o -name "*.html" \) -exec sed -i "s|http://$SERVER_IP:[0-9]*|http://$SERVER_IP:$BACKEND_PORT|g" {} +
 
 cat << EOF > /etc/systemd/system/kms-backend.service
 [Unit]
