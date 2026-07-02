@@ -7,6 +7,7 @@ import { ioApi } from '../api/io';
 import { api } from '../api';
 import { AudioRecorder } from './AudioRecorder';
 import { parseMarkdownToHtml } from '../utils/markdownParser';
+import { useAuthStore } from '../store/useAuthStore';
 import type { IOData, UIFile } from '../types/io.types';
 import type { InfoObjectDTO, MediaFileDTO } from '../types/dto.types';
 
@@ -19,9 +20,17 @@ interface PendingFile {
   file: File;
 }
 
+interface FormHistoryState {
+  formData: IOData;
+  tagsInput: string;
+  uiFiles: UIFile[];
+  pendingFiles: PendingFile[];
+}
+
 export const IOForm = ({ ioId }: IOFormProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const user = useAuthStore(state => state.user);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [currentIoId, setCurrentIoId] = useState<string | null>(ioId || null);
@@ -35,7 +44,7 @@ export const IOForm = ({ ioId }: IOFormProps) => {
   } | null>(null);
 
   const [formData, setFormData] = useState<IOData>({
-    title: '', text: '', source: '', url: '', author: '', doi: '', publicationName: '',
+    title: '', text: '', source: '', url: '', author: user?.login || '', doi: '', publicationName: '',
     dateFrom: '', dateTo: '', tags: [], attachments: []
   });
   const [tagsInput, setTagsInput] = useState('');
@@ -44,6 +53,26 @@ export const IOForm = ({ ioId }: IOFormProps) => {
   const [uiFiles, setUiFiles] = useState<UIFile[]>([]);
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
+
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+
+  const historyRef = useRef<FormHistoryState[]>([]);
+  const historyIndexRef = useRef<number>(-1);
+  const isUndoRedoAction = useRef(false);
+
+  const [prevUserId, setPrevUserId] = useState<number | string | undefined>(user?.id);
+
+  if (user?.id !== prevUserId) {
+    setPrevUserId(user?.id);
+    const defaultAuthor = user?.login || '';
+    if (!ioId && formData.author !== defaultAuthor) {
+      setFormData(prev => ({
+        ...prev,
+        author: defaultAuthor
+      }));
+    }
+  }
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     setNotification({ message, type });
@@ -102,6 +131,11 @@ export const IOForm = ({ ioId }: IOFormProps) => {
     } else if (syntax === 'code') {
       replacement = `\n\`\`\`\n${selectedText || placeholder || t('io_form.editor.code')}\n\`\`\`\n`;
       selectionOffset = start + replacement.length;
+    } else if (syntax === 'link') {
+      const defaultText = t('io_form.editor.link_text') || 'link text';
+      replacement = `[${selectedText || placeholder || defaultText}](https://)`;
+      selectionOffset = start + 1;
+      selectionLength = selectedText ? selectedText.length : (placeholder || defaultText).length;
     }
 
     const newText = currentText.substring(0, start) + replacement + currentText.substring(end);
@@ -109,7 +143,7 @@ export const IOForm = ({ ioId }: IOFormProps) => {
 
     setTimeout(() => {
       textarea.focus();
-      if (syntax === 'bold' || syntax === 'italic' || syntax === 'strike') {
+      if (syntax === 'bold' || syntax === 'italic' || syntax === 'strike' || syntax === 'link') {
         textarea.setSelectionRange(selectionOffset, selectionOffset + selectionLength);
       } else {
         textarea.setSelectionRange(selectionOffset, selectionOffset);
@@ -137,7 +171,7 @@ export const IOForm = ({ ioId }: IOFormProps) => {
 
       if (!ioId) {
         setFormData({
-          title: '', text: '', source: '', url: '', author: '', doi: '', publicationName: '',
+          title: '', text: '', source: '', url: '', author: user?.login || '', doi: '', publicationName: '',
           dateFrom: '', dateTo: '', tags: [], attachments: []
         });
         setTagsInput('');
@@ -201,6 +235,105 @@ export const IOForm = ({ ioId }: IOFormProps) => {
       isMounted = false;
     };
   }, [ioId, t]);
+
+  useEffect(() => {
+    if (status === 'loading' || status === 'saving') return;
+
+    if (isUndoRedoAction.current) {
+      isUndoRedoAction.current = false;
+      return;
+    }
+
+    const newState: FormHistoryState = {
+      formData,
+      tagsInput,
+      uiFiles,
+      pendingFiles
+    };
+
+    const currentIndex = historyIndexRef.current;
+    const currentHistory = historyRef.current;
+
+    if (currentIndex >= 0) {
+      const current = currentHistory[currentIndex];
+      const isSame =
+        JSON.stringify(current.formData) === JSON.stringify(newState.formData) &&
+        current.tagsInput === newState.tagsInput &&
+        JSON.stringify(current.uiFiles) === JSON.stringify(newState.uiFiles) &&
+        current.pendingFiles.length === newState.pendingFiles.length;
+      if (isSame) return;
+    }
+
+    const nextHistory = currentHistory.slice(0, currentIndex + 1);
+    nextHistory.push(newState);
+
+    historyRef.current = nextHistory;
+    historyIndexRef.current = nextHistory.length - 1;
+
+    setCanUndo(nextHistory.length > 1);
+    setCanRedo(false);
+  }, [formData, tagsInput, uiFiles, pendingFiles, status]);
+
+  const handleUndo = () => {
+    const currentIndex = historyIndexRef.current;
+    if (currentIndex > 0) {
+      isUndoRedoAction.current = true;
+      const nextIndex = currentIndex - 1;
+      historyIndexRef.current = nextIndex;
+
+      const prevState = historyRef.current[nextIndex];
+      setFormData(prevState.formData);
+      setTagsInput(prevState.tagsInput);
+      setUiFiles(prevState.uiFiles);
+      setPendingFiles(prevState.pendingFiles);
+
+      setCanUndo(nextIndex > 0);
+      setCanRedo(true);
+    }
+  };
+
+  const handleRedo = () => {
+    const currentIndex = historyIndexRef.current;
+    if (currentIndex < historyRef.current.length - 1) {
+      isUndoRedoAction.current = true;
+      const nextIndex = currentIndex + 1;
+      historyIndexRef.current = nextIndex;
+
+      const nextState = historyRef.current[nextIndex];
+      setFormData(nextState.formData);
+      setTagsInput(nextState.tagsInput);
+      setUiFiles(nextState.uiFiles);
+      setPendingFiles(nextState.pendingFiles);
+
+      setCanUndo(true);
+      setCanRedo(nextIndex < historyRef.current.length - 1);
+    }
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isMod = e.ctrlKey || e.metaKey;
+      if (isMod) {
+        if (e.key.toLowerCase() === 'z') {
+          if (e.shiftKey) {
+            e.preventDefault();
+            handleRedo();
+          } else {
+            e.preventDefault();
+            handleUndo();
+          }
+        } else if (e.key.toLowerCase() === 'y') {
+          e.preventDefault();
+          handleRedo();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -356,7 +489,7 @@ export const IOForm = ({ ioId }: IOFormProps) => {
 
   const handleClearForm = () => {
     setFormData({
-      title: '', text: '', source: '', url: '', author: '', doi: '', publicationName: '',
+      title: '', text: '', source: '', url: '', author: user?.login || '', doi: '', publicationName: '',
       dateFrom: '', dateTo: '', tags: [], attachments: []
     });
     setTagsInput('');
@@ -380,7 +513,7 @@ export const IOForm = ({ ioId }: IOFormProps) => {
   const handleCreateNew = () => {
     setCurrentIoId(null);
     setFormData({
-      title: '', text: '', source: '', url: '', author: '', doi: '', publicationName: '',
+      title: '', text: '', source: '', url: '', author: user?.login || '', doi: '', publicationName: '',
       dateFrom: '', dateTo: '', tags: [], attachments: []
     });
     setTagsInput('');
@@ -435,10 +568,36 @@ export const IOForm = ({ ioId }: IOFormProps) => {
         </div>
       )}
 
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-2">
-        <h1 className="text-xl md:text-2xl font-bold text-gray-800">
-          {currentIoId ? t('io_form.title_edit') : t('io_form.title_create')}
-        </h1>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <div className="flex items-center gap-4">
+          <h1 className="text-xl md:text-2xl font-bold text-gray-800">
+            {currentIoId ? t('io_form.title_edit') : t('io_form.title_create')}
+          </h1>
+          <div className="flex items-center bg-gray-100 p-1 rounded-lg border border-gray-200 shrink-0">
+            <button
+              type="button"
+              onClick={handleUndo}
+              disabled={!canUndo}
+              className="p-1.5 rounded hover:bg-white disabled:opacity-40 disabled:hover:bg-transparent transition-colors text-gray-700"
+              title={`${t('io_form.undo') || 'Undo'} (Ctrl+Z)`}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={handleRedo}
+              disabled={!canRedo}
+              className="p-1.5 rounded hover:bg-white disabled:opacity-40 disabled:hover:bg-transparent transition-colors text-gray-700"
+              title={`${t('io_form.redo') || 'Redo'} (Ctrl+Y)`}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10H11a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6" />
+              </svg>
+            </button>
+          </div>
+        </div>
         <div className="text-xs md:text-sm">
           {status === 'saving' && <span className="text-blue-500">{t('io_form.saving')}</span>}
           {status === 'saved' && <span className="text-green-500">{t('io_form.saved', { time: lastSaved })}</span>}
@@ -477,6 +636,11 @@ export const IOForm = ({ ioId }: IOFormProps) => {
                   <button type="button" onClick={() => insertMarkdown('bullet', t('io_form.editor.bullet_list'))} className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-100 transition-colors text-gray-800" title={t('io_form.editor.bullet_tooltip')}>{t('io_form.editor.bullet_label')}</button>
                   <button type="button" onClick={() => insertMarkdown('number', t('io_form.editor.numbered_list'))} className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-100 transition-colors text-gray-800" title={t('io_form.editor.numbered_tooltip')}>{t('io_form.editor.numbered_label')}</button>
                   <button type="button" onClick={() => insertMarkdown('code', t('io_form.editor.code'))} className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-100 transition-colors text-gray-800" title={t('io_form.editor.code_tooltip')}>&lt;/&gt;</button>
+                  <button type="button" onClick={() => insertMarkdown('link')} className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-100 transition-colors text-gray-800" title={t('io_form.editor.link_tooltip')}>
+                    <svg className="w-3 h-3 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                  </button>
                   <div className="w-px h-4 bg-gray-300 mx-1 hidden sm:block"></div>
                   <AudioRecorder 
                     onTranscriptionComplete={(transcribedText) => {
@@ -516,11 +680,6 @@ export const IOForm = ({ ioId }: IOFormProps) => {
           </div>
 
           <div className="col-span-1">
-            <label className="block text-sm font-medium text-gray-700">{t('io_form.fields.author')}</label>
-            <input type="text" name="author" value={formData.author} onChange={handleChange} className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
-          </div>
-
-          <div className="col-span-1">
             <label className="block text-sm font-medium text-gray-700">{t('io_form.fields.url')}</label>
             <input type="url" name="url" value={formData.url} onChange={handleChange} className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" />
           </div>
@@ -546,8 +705,8 @@ export const IOForm = ({ ioId }: IOFormProps) => {
           </div>
 
           <div className="col-span-1 md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700">{t('io_form.fields.tags')}</label>
-            <textarea value={tagsInput} onChange={handleTagsChange} rows={3} className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" placeholder={t('io_form.fields.tags_placeholder')} />
+            <label className="block text-sm font-medium text-gray-700">{t('io_form.fields.tags')} <span className="text-red-500">*</span></label>
+            <textarea required value={tagsInput} onChange={handleTagsChange} rows={3} className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" placeholder={t('io_form.fields.tags_placeholder')} />
           </div>
 
           <div className="col-span-1 md:col-span-2">

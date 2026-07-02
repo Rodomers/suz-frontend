@@ -77,13 +77,20 @@ export const ViewIOPage = () => {
   };
 
   const handleDeletionRequest = async () => {
-    if (!deleteReason.trim()) return;
+    if (!id || !deleteReason.trim()) return;
     setIsSubmitting(true);
     try {
-      await api.post(`/deletion-requests/info-objects/${id}`, { reason: deleteReason });
+      await api.patch(`/info-objects/${id}/soft-delete?reason=${encodeURIComponent(deleteReason)}`);
       setNotification({ message: t('view_io.delete_request_success'), type: 'success' });
       setIsDeleteModalOpen(false);
       setDeleteReason('');
+      
+      const [ioRes, filesRes] = await Promise.all([
+        ioApi.getIO(id),
+        ioApi.getFiles(id).catch(() => ({ data: [] }))
+      ]);
+      setData(ioRes.data as unknown as InfoObjectDTO);
+      setFiles(Array.isArray(filesRes.data) ? filesRes.data : []);
     } catch {
       setNotification({ message: t('view_io.delete_request_error'), type: 'error' });
     } finally {
@@ -94,7 +101,16 @@ export const ViewIOPage = () => {
   if (isLoading) return <div className="p-6 text-center text-gray-600">{t('view_io.loading')}</div>;
   if (!data) return <div className="p-6 text-center text-red-500">{t('view_io.not_found')}</div>;
 
-  const isOwner = user?.id === data.created_by;
+  const typedData = data as InfoObjectDTO & { deletion_flag?: boolean; author_name?: string };
+  const isOwner = user?.id === typedData.created_by;
+  const isDeleted = !!typedData.deletion_flag;
+  
+  const titleText = typedData.title || '';
+  const escapedTitle = titleText
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  const titleHtml = isDeleted ? `<del>${escapedTitle}</del>` : escapedTitle;
 
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-8 bg-white rounded-xl shadow-sm border border-gray-200 relative">
@@ -136,10 +152,17 @@ export const ViewIOPage = () => {
 
       <div className="flex flex-col md:flex-row justify-between items-start mb-6 border-b border-gray-100 pb-4 gap-4">
         <div className="flex-1">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2 leading-tight">{data.title}</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2 leading-tight">
+            <span dangerouslySetInnerHTML={{ __html: titleHtml }} />
+          </h1>
           <div className="text-sm text-gray-500 flex flex-wrap gap-4">
-            <span>{t('view_io.author')} <span className="font-medium text-gray-700">{data.author || t('view_io.not_specified')}</span></span>
-            <span>{t('view_io.source')} <span className="font-medium text-gray-700">{data.source || t('view_io.not_specified')}</span></span>
+            <span>
+              {t('view_io.author')}{' '}
+              <span className="font-medium text-gray-700">
+                {typedData.author_name || typedData.author || t('view_io.not_specified')}
+              </span>
+            </span>
+            <span>{t('view_io.source')} <span className="font-medium text-gray-700">{typedData.source || t('view_io.not_specified')}</span></span>
           </div>
         </div>
         <div className="flex shrink-0 gap-2 flex-wrap">
@@ -150,7 +173,7 @@ export const ViewIOPage = () => {
             {t('view_io.export_zip')}
           </button>
           
-          {isOwner && (
+          {isOwner && !isDeleted && (
             <>
               <Link to={`/io/edit/${id}`} className="px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg border border-transparent hover:bg-gray-200 transition-colors">
                 {t('view_io.edit')}
@@ -168,14 +191,14 @@ export const ViewIOPage = () => {
 
       <div 
         className="text-gray-800 break-words prose prose-sm max-w-none space-y-1 mb-8"
-        dangerouslySetInnerHTML={{ __html: parseMarkdownToHtml(data.content || '') }}
+        dangerouslySetInnerHTML={{ __html: parseMarkdownToHtml(typedData.content || '') }}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 p-5 rounded-xl mb-6 border border-gray-100">
         <div>
           <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">{t('view_io.tags')}</h3>
           <div className="flex flex-wrap gap-2">
-            {data.tags && data.tags.length > 0 ? (data.tags as unknown as string[]).map((tag: string, idx: number) => (
+            {typedData.tags && typedData.tags.length > 0 ? (typedData.tags as unknown as string[]).map((tag: string, idx: number) => (
               <span key={idx} className="px-3 py-1 bg-blue-50 border border-blue-100 text-blue-700 rounded-lg text-sm font-medium">
                 {tag}
               </span>
@@ -186,10 +209,10 @@ export const ViewIOPage = () => {
         <div>
           <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">{t('view_io.metadata')}</h3>
           <ul className="text-sm space-y-2 text-gray-700">
-            <li><span className="font-medium text-gray-900">{t('view_io.meta_doi')}</span> {data.doi || '-'}</li>
+            <li><span className="font-medium text-gray-900">{t('view_io.meta_doi')}</span> {typedData.doi || '-'}</li>
             <li>
               <span className="font-medium text-gray-900">{t('view_io.meta_url')}</span>{' '}
-              {data.url ? <a href={data.url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">{data.url}</a> : '-'}
+              {typedData.url ? <a href={typedData.url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">{typedData.url}</a> : '-'}
             </li>
           </ul>
         </div>

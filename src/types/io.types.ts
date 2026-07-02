@@ -10,6 +10,7 @@ export interface IOData {
   dateTo: string;
   tags: string[];
   attachments: string[];
+  deletionFlag?: boolean;
 }
 
 export interface FileUploadResponse {

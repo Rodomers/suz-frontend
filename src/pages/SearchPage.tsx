@@ -87,6 +87,27 @@ export const SearchPage = () => {
     }
   };
 
+  const handleTagToggle = (tagText: string) => {
+    setFilters((prev) => {
+      const currentFilters = prev || defaultFilters;
+      const currentTags = currentFilters.tags
+        ? currentFilters.tags.split(/[,\n]+/).map(t => t.trim()).filter(Boolean)
+        : [];
+
+      let newTags: string[];
+      if (currentTags.includes(tagText)) {
+        newTags = currentTags.filter(t => t !== tagText);
+      } else {
+        newTags = [...currentTags, tagText];
+      }
+
+      return {
+        ...currentFilters,
+        tags: newTags.join(', ')
+      };
+    });
+  };
+
   useEffect(() => {
     const startingFilters = initialFiltersFromHistory || defaultFilters;
     handleSearch(startingFilters);
@@ -101,15 +122,21 @@ export const SearchPage = () => {
       )}
       <h1 className="text-2xl font-bold mb-6 text-gray-900 tracking-tight">{t('search.title', 'Поиск')}</h1>
       <SearchForm 
-        key={initialFiltersFromHistory ? JSON.stringify(initialFiltersFromHistory) : 'default'}
+        key={JSON.stringify(filters || initialFiltersFromHistory || defaultFilters)}
         onSearch={handleSearch}
         onSaveSearch={handleSaveSearch}
         isLoading={isLoading} 
         error={error} 
-        initialFilters={initialFiltersFromHistory}
+        initialFilters={filters || initialFiltersFromHistory || defaultFilters}
       />
       <div className="mt-6">
-        <SearchResultsTable results={results} onPageChange={handlePageChange} isLoading={isLoading} />
+        <SearchResultsTable 
+          results={results} 
+          onPageChange={handlePageChange} 
+          isLoading={isLoading} 
+          selectedTags={filters?.tags || ''}
+          onTagClick={handleTagToggle}
+        />
       </div>
     </div>
   );

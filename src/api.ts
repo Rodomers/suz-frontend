@@ -53,6 +53,7 @@ export const mapSearchResultItem = (dto: InfoObjectDTO): SearchResultItem => ({
     tags: dto.tags?.map((t) => t.name) || [],
     attachments: dto.files?.map((f) => String(f.id)) || [],
     createdAt: dto.created_at,
+    deletionFlag: dto.deletion_flag,
 });
 
 export const mapPaginated = <T, U>(

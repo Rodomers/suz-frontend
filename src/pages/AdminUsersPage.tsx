@@ -84,6 +84,8 @@ export const AdminUsersPage = () => {
     is_super_admin: false
   });
 
+  const isSelf = editingUserId === currentUser?.id;
+
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
@@ -278,7 +280,10 @@ export const AdminUsersPage = () => {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedUserIds(users.map(u => u.id));
+      setUsers(prev => {
+        setSelectedUserIds(prev.map(u => u.id));
+        return prev;
+      });
     } else {
       setSelectedUserIds([]);
     }
@@ -544,18 +549,18 @@ export const AdminUsersPage = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">{t('admin_users.roles')}</label>
                   
                   <div className="flex gap-4">
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                      <input type="checkbox" checked={editFormData.is_user_admin} onChange={e => setEditFormData({...editFormData, is_user_admin: e.target.checked})} className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                    <label className={`flex items-center space-x-2 ${isSelf ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
+                      <input type="checkbox" disabled={isSelf} checked={editFormData.is_user_admin} onChange={e => setEditFormData({...editFormData, is_user_admin: e.target.checked})} className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-50" />
                       <span className="text-xs text-gray-700">{t('admin_users.role_user_admin')}</span>
                     </label>
 
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                      <input type="checkbox" checked={editFormData.is_data_admin} onChange={e => setEditFormData({...editFormData, is_data_admin: e.target.checked})} className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                    <label className={`flex items-center space-x-2 ${isSelf ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
+                      <input type="checkbox" disabled={isSelf} checked={editFormData.is_data_admin} onChange={e => setEditFormData({...editFormData, is_data_admin: e.target.checked})} className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-50" />
                       <span className="text-xs text-gray-700">{t('admin_users.role_data_admin')}</span>
                     </label>
 
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                      <input type="checkbox" checked={editFormData.is_super_admin} onChange={e => setEditFormData({...editFormData, is_super_admin: e.target.checked})} className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                    <label className={`flex items-center space-x-2 ${isSelf ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
+                      <input type="checkbox" disabled={isSelf} checked={editFormData.is_super_admin} onChange={e => setEditFormData({...editFormData, is_super_admin: e.target.checked})} className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-50" />
                       <span className="text-xs text-gray-700">{t('admin_users.role_super_admin')}</span>
                     </label>
                   </div>

@@ -188,11 +188,13 @@
   "search_results": {
     "loading": "Loading results...",
     "empty": "No results found for your query.",
+    "tag_tooltip": "Hold Ctrl + click to add tag to search",
     "columns": {
       "title": "Title",
       "author": "Author",
       "tags": "Tags",
-      "actions": "Actions"
+      "actions": "Actions",
+      "attachments": "Attachments"
     },
     "actions": {
       "view": "View",
@@ -203,6 +205,9 @@
       "from": "of",
       "prev": "Previous",
       "next": "Next"
+    },
+    "status": {
+      "deleted": "Deleted"
     }
   },
   "admin_data": {
